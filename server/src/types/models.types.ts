@@ -47,8 +47,6 @@ export interface Order {
   lastName: string;
   phone: string;
   email: string;
-  productId: number;
-  quantity: number;
   status: OrderStatus;
   createAt: Date;
 }

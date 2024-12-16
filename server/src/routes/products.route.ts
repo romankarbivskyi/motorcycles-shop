@@ -7,6 +7,7 @@ const router = Router();
 
 router.get("/", ProductController.getProducts);
 router.get("/:productId", ProductController.getProducts);
+router.get("/search/:searchString", ProductController.getProducts);
 router.post(
   "/create",
   authMiddleware(true),

@@ -42,17 +42,6 @@ export const Order = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    productId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: Product,
-        key: "id",
-      },
-    },
-    quantity: {
-      type: DataTypes.INTEGER,
-      defaultValue: 1,
-    },
     status: {
       type: DataTypes.ENUM("Pending", "Completed", "Shipped", "Cancelled"),
       defaultValue: "Pending",

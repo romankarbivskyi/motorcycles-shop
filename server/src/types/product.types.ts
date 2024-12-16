@@ -28,3 +28,8 @@ export interface CreateProductArgs {
   };
   images: string[];
 }
+
+export interface GetProductArgs {
+  productId?: number;
+  search?: string;
+}

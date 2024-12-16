@@ -1,35 +1,53 @@
 import { sequelize } from "../config/database";
 import { QueryTypes } from "sequelize";
 import { ApiError } from "../utils/ApiError";
-import { CreateProductArgs, UpdateProductArgs } from "../types/product.types";
+import {
+  CreateProductArgs,
+  GetProductArgs,
+  UpdateProductArgs,
+} from "../types/product.types";
 import { Product } from "../types/models.types";
 import fs from "fs";
 import path from "path";
 
 export class ProductService {
-  static async getProducts(productId?: number): Promise<Product[]> {
+  static async getProducts({
+    productId,
+    search,
+  }: GetProductArgs): Promise<Product[]> {
+    console.log(search);
     const products = await sequelize.query(
       `
-        SELECT 
-            p.*, 
-            COALESCE(
-                json_agg(DISTINCT CASE WHEN a."id" IS NOT NULL THEN jsonb_build_object('id', a."id", 'name', a."name", 'value', a."value") END) 
-                FILTER (WHERE a."id" IS NOT NULL), 
-                '[]'::json
-            ) AS attributes,
-            COALESCE(
-                json_agg(DISTINCT CASE WHEN i."id" IS NOT NULL THEN jsonb_build_object('id', i."id", 'url', i."url") END) 
-                FILTER (WHERE i."id" IS NOT NULL), 
-                '[]'::json
-            ) AS images
-        FROM "products" p
-        LEFT JOIN "attributes" a ON a."productId" = p."id"
-        LEFT JOIN "images" i ON i."productId" = p."id"
-        ${productId ? `WHERE p."id" = :productId` : ""}
-        GROUP BY p."id"
-        `,
+      SELECT 
+          p.*, 
+          COALESCE(
+              json_agg(DISTINCT CASE WHEN a."id" IS NOT NULL THEN jsonb_build_object('id', a."id", 'name', a."name", 'value', a."value") END) 
+              FILTER (WHERE a."id" IS NOT NULL), 
+              '[]'::json
+          ) AS attributes,
+          COALESCE(
+              json_agg(DISTINCT CASE WHEN i."id" IS NOT NULL THEN jsonb_build_object('id', i."id", 'url', i."url") END) 
+              FILTER (WHERE i."id" IS NOT NULL), 
+              '[]'::json
+          ) AS images
+      FROM "products" p
+      LEFT JOIN "attributes" a ON a."productId" = p."id"
+      LEFT JOIN "images" i ON i."productId" = p."id"
+      ${productId ? `WHERE p."id" = :productId` : ""}
+      ${
+        search
+          ? `WHERE p.make ILIKE :search OR p.model ILIKE :search`
+          : search && productId
+            ? `AND (p.make ILIKE :search OR p.model ILIKE :search)`
+            : ""
+      }
+      GROUP BY p."id"
+    `,
       {
-        replacements: productId ? { productId } : undefined,
+        replacements: {
+          productId,
+          search: `%${search}%`,
+        },
         type: QueryTypes.SELECT,
       },
     );
@@ -100,7 +118,8 @@ export class ProductService {
 
       if (attributes) {
         for (const attribute of attributes) {
-          const { name, value } = JSON.parse(attribute);
+          const { name, value } =
+            typeof attribute === "string" ? JSON.parse(attribute) : attribute;
           await sequelize.query(
             'INSERT INTO attributes (name, value, "productId") VALUES (:name, :value, :productId)',
             {
@@ -151,7 +170,7 @@ export class ProductService {
 
     const transaction = await sequelize.transaction();
     try {
-      await this.getProducts(id);
+      await this.getProducts({ productId: id });
 
       if (deleteImages) {
         for (const url of deleteImages) {
@@ -207,7 +226,8 @@ export class ProductService {
 
       if (attributes) {
         for (const attribute of attributes) {
-          const { name, value } = JSON.parse(attribute);
+          const { name, value } =
+            typeof attribute === "string" ? JSON.parse(attribute) : attribute;
           await sequelize.query(
             'INSERT INTO attributes (name, value, "productId") VALUES (:name, :value, :productId)',
             {
@@ -241,7 +261,7 @@ export class ProductService {
   }
 
   static async deleteProduct(id: number) {
-    await this.getProducts(id);
+    await this.getProducts({ productId: id });
 
     await sequelize.query("DELETE FROM products WHERE id = :id", {
       replacements: { id },

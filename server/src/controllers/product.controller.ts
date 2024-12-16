@@ -5,7 +5,11 @@ export class ProductController {
   static async getProducts(req: Request, res: Response, next: NextFunction) {
     try {
       const productId = parseInt(req.params.productId);
-      const products = await ProductService.getProducts(productId);
+      const searchString = req.params.searchString;
+      const products = await ProductService.getProducts({
+        productId,
+        search: searchString,
+      });
 
       if (products.length > 1) {
         res.status(200).json(products);

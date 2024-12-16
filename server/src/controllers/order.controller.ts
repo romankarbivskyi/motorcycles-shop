@@ -6,11 +6,11 @@ export class OrderController {
   static async getOrders(req: Request, res: Response, next: NextFunction) {
     try {
       const orderId = parseInt(req.params.orderId);
-      const orders = await OrderService.getOrders(orderId);
+      const orders = await OrderService.getOrders({ orderId });
 
       if (orderId) {
         const order = orders[0];
-        if ((res as any).user.id !== order.userId) {
+        if ((res as any).user.id != order.userId) {
           throw ApiError.Forbidden();
         }
 
@@ -27,9 +27,9 @@ export class OrderController {
     try {
       const userId = parseInt(req.params.userId);
 
-      if ((req as any).user.id !== userId) throw ApiError.Forbidden();
+      if ((req as any).user.id != userId) throw ApiError.Forbidden();
 
-      const orders = await OrderService.getUserOrders(userId);
+      const orders = await OrderService.getOrders({ userId });
 
       res.status(200).json(orders);
     } catch (err) {
@@ -40,8 +40,7 @@ export class OrderController {
   static async createOrder(req: Request, res: Response, next: NextFunction) {
     try {
       const data = req.body;
-
-      if ((req as any).user.id !== data.userId) throw ApiError.Forbidden();
+      if ((req as any).user.id != data.userId) throw ApiError.Forbidden();
 
       const newOrder = await OrderService.createOrder(data);
 
