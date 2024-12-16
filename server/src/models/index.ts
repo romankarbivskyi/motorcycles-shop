@@ -12,14 +12,14 @@ export * from "./attribute.model";
 export * from "./order.model";
 export * from "./image.model";
 
-User.hasMany(Order, { foreignKey: "userId" });
-Order.belongsTo(User, { foreignKey: "userId" });
-
 Category.hasMany(Product, { foreignKey: "categoryId" });
 Product.belongsTo(Category, { foreignKey: "categoryId" });
 
 Product.hasMany(Attribute, { foreignKey: "productId" });
 Attribute.belongsTo(Product, { foreignKey: "productId" });
+
+User.hasMany(Order, { foreignKey: "userId" });
+Order.belongsTo(User, { foreignKey: "userId" });
 
 Product.hasMany(Order, { foreignKey: "productId" });
 Order.belongsTo(Product, { foreignKey: "productId" });

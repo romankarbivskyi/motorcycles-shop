@@ -19,19 +19,24 @@ export class CategoryService {
     return categories;
   }
 
-  static async createCategory({ name, description }: Category) {
-    const newCategory = await sequelize.query(
-      "INSERT INTO categories (name, description) VALUES (:name, :description) RETURNING *",
-      {
-        replacements: {
-          name,
-          description,
+  static async createCategory({
+    name,
+    description,
+  }: Category): Promise<Category> {
+    const newCategory = (
+      (await sequelize.query(
+        "INSERT INTO categories (name, description) VALUES (:name, :description) RETURNING *",
+        {
+          replacements: {
+            name,
+            description,
+          },
+          type: QueryTypes.INSERT,
         },
-        type: QueryTypes.INSERT,
-      },
-    );
+      )) as any
+    )[0][0] as Category;
 
-    return (newCategory as any)[0][0];
+    return newCategory;
   }
 
   static async updateCategory({ id, name, description }: Category) {

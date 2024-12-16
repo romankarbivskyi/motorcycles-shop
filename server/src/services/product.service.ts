@@ -4,9 +4,10 @@ import { ApiError } from "../utils/ApiError";
 import { CreateProductArgs, UpdateProductArgs } from "../types/product.types";
 import { Product } from "../types/models.types";
 import fs from "fs";
+import path from "path";
 
 export class ProductService {
-  static async getProducts(productId?: number) {
+  static async getProducts(productId?: number): Promise<Product[]> {
     const products = await sequelize.query(
       `
         SELECT 
@@ -52,58 +53,75 @@ export class ProductService {
       attributes,
     },
     images,
-  }: CreateProductArgs) {
-    const [newProduct] = await sequelize.query(
-      `INSERT INTO products (make, model, year, price, description, "stockQuantity", "categoryId") 
+  }: CreateProductArgs): Promise<Product> {
+    if (images && !Array.isArray(images))
+      throw ApiError.BadRequest("Images should be an array");
+    if (attributes && !Array.isArray(attributes))
+      throw ApiError.BadRequest("Attributes should be an array");
+
+    const transaction = await sequelize.transaction();
+    try {
+      const newProduct = (
+        (await sequelize.query(
+          `INSERT INTO products (make, model, year, price, description, "stockQuantity", "categoryId") 
    VALUES (:make, :model, :year, :price, :description, :stockQuantity, :categoryId) 
    RETURNING *`,
-      {
-        replacements: {
-          make,
-          model,
-          year,
-          price,
-          description,
-          stockQuantity: stockQuantity ?? 0,
-          categoryId,
-        },
-        type: QueryTypes.INSERT,
-      },
-    );
-
-    if (images && images.length > 0) {
-      for (const url of images) {
-        await sequelize.query(
-          'INSERT INTO images (url, "productId") VALUES (:url, :productId)',
-          {
-            type: QueryTypes.INSERT,
-            replacements: {
-              url,
-              productId: (newProduct as any)[0].id,
-            },
-          },
-        );
-      }
-    }
-
-    if (attributes && attributes.length > 0) {
-      for (const attribute of attributes) {
-        const { name, value } = JSON.parse(attribute);
-        await sequelize.query(
-          'INSERT INTO attributes (name, value, "productId") VALUES (:name, :value, :productId)',
           {
             replacements: {
-              name,
-              value,
-              productId: (newProduct as any)[0].id,
+              make,
+              model,
+              year,
+              price,
+              description,
+              stockQuantity: stockQuantity ?? 0,
+              categoryId,
             },
             type: QueryTypes.INSERT,
+            transaction,
           },
-        );
-      }
-    }
+        )) as any
+      )[0][0] as Product;
 
-    return (newProduct as any)[0];
+      if (images) {
+        for (const url of images) {
+          await sequelize.query(
+            'INSERT INTO images (url, "productId") VALUES (:url, :productId)',
+            {
+              type: QueryTypes.INSERT,
+              replacements: {
+                url,
+                productId: newProduct.id,
+              },
+              transaction,
+            },
+          );
+        }
+      }
+
+      if (attributes) {
+        for (const attribute of attributes) {
+          const { name, value } = JSON.parse(attribute);
+          await sequelize.query(
+            'INSERT INTO attributes (name, value, "productId") VALUES (:name, :value, :productId)',
+            {
+              replacements: {
+                name,
+                value,
+                productId: newProduct.id,
+              },
+              type: QueryTypes.INSERT,
+              transaction,
+            },
+          );
+        }
+      }
+
+      await transaction.commit();
+      return newProduct;
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 
   static async updateProduct({
@@ -121,83 +139,105 @@ export class ProductService {
       deleteAttributes,
     },
     images,
-  }: UpdateProductArgs) {
-    const products = (await this.getProducts(id)) as Product[];
+  }: UpdateProductArgs): Promise<Product> {
+    if (images && !Array.isArray(images))
+      throw ApiError.BadRequest("Images should be an array");
+    if (deleteImages && !Array.isArray(deleteImages))
+      throw ApiError.BadRequest("DeleteImages should be an array");
+    if (attributes && !Array.isArray(attributes))
+      throw ApiError.BadRequest("Attributes should be an array");
+    if (deleteAttributes && !Array.isArray(deleteAttributes))
+      throw ApiError.BadRequest("DeleteAttributes should be an array");
 
-    const existProduct = products[0];
+    const transaction = await sequelize.transaction();
+    try {
+      await this.getProducts(id);
 
-    if (deleteImages) {
-      console.log(deleteImages);
-      for (const url of deleteImages) {
-        console.log("Deleting", url);
-        await sequelize.query("DELETE FROM images WHERE url = :url", {
-          type: QueryTypes.DELETE,
-          replacements: {
-            url: url,
-          },
-        });
-        fs.unlinkSync(__dirname + "./../../uploads/" + url);
+      if (deleteImages) {
+        for (const url of deleteImages) {
+          await sequelize.query("DELETE FROM images WHERE url = :url", {
+            type: QueryTypes.DELETE,
+            replacements: { url },
+            transaction,
+          });
+          try {
+            await fs.promises.unlink(
+              path.join(__dirname, "../../uploads", url),
+            );
+          } catch (err) {
+            console.error("Failed to delete file:", url, err);
+          }
+        }
       }
-    }
 
-    const [updateProduct] = await sequelize.query(
-      `UPDATE products 
-   SET make = :make, model = :model, year = :year, price = :price, description = :description, "stockQuantity" = :stockQuantity, "categoryId" = :categoryId
-   WHERE id = :id 
-   RETURNING *`,
-      {
-        replacements: {
-          make: make ?? null,
-          model: model ?? null,
-          year: year ?? null,
-          price: price ?? null,
-          description: description ?? null,
-          stockQuantity: stockQuantity ?? 0,
-          categoryId: categoryId ?? null,
-          id: id ?? null,
-        },
-        type: QueryTypes.UPDATE,
-      },
-    );
-
-    if (deleteAttributes) {
-      for (const id of deleteAttributes) {
-        await sequelize.query("DELETE FROM attributes WHERE id = :id", {
-          replacements: { id },
-          type: QueryTypes.DELETE,
-        });
-      }
-    }
-
-    if (attributes && attributes.length > 0) {
-      for (const attribute of attributes) {
-        const { name, value } = JSON.parse(attribute);
+      const updatedProduct = (
         await sequelize.query(
-          'INSERT INTO attributes (name, value, "productId") VALUES (:name, :value, :productId)',
+          `UPDATE products 
+       SET make = :make, model = :model, year = :year, price = :price, 
+           description = :description, "stockQuantity" = :stockQuantity, 
+           "categoryId" = :categoryId
+       WHERE id = :id 
+       RETURNING *`,
           {
-            replacements: { name, value, productId: existProduct.id },
-            type: QueryTypes.INSERT,
-          },
-        );
-      }
-    }
-
-    if (images && images.length > 0) {
-      for (const url of images) {
-        await sequelize.query(
-          'INSERT INTO images (url, "productId") VALUES(:url, :productId)',
-          {
-            type: QueryTypes.INSERT,
             replacements: {
-              url,
-              productId: (updateProduct as any)[0].id,
+              make: make ?? null,
+              model: model ?? null,
+              year: year ?? null,
+              price: price ?? null,
+              description: description ?? null,
+              stockQuantity: stockQuantity ?? 0,
+              categoryId: categoryId ?? null,
+              id,
             },
+            type: QueryTypes.UPDATE,
+            transaction,
           },
-        );
-      }
-    }
+        )
+      )?.[0]?.[0] as unknown as Product;
 
-    return (updateProduct as any)[0];
+      if (deleteAttributes) {
+        for (const attributeId of deleteAttributes) {
+          await sequelize.query("DELETE FROM attributes WHERE id = :id", {
+            replacements: { id: attributeId },
+            type: QueryTypes.DELETE,
+            transaction,
+          });
+        }
+      }
+
+      if (attributes) {
+        for (const attribute of attributes) {
+          const { name, value } = JSON.parse(attribute);
+          await sequelize.query(
+            'INSERT INTO attributes (name, value, "productId") VALUES (:name, :value, :productId)',
+            {
+              replacements: { name, value, productId: updatedProduct.id },
+              type: QueryTypes.INSERT,
+              transaction,
+            },
+          );
+        }
+      }
+
+      if (images) {
+        for (const url of images) {
+          await sequelize.query(
+            'INSERT INTO images (url, "productId") VALUES(:url, :productId)',
+            {
+              replacements: { url, productId: updatedProduct.id },
+              type: QueryTypes.INSERT,
+              transaction,
+            },
+          );
+        }
+      }
+
+      await transaction.commit();
+      return updatedProduct;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   static async deleteProduct(id: number) {

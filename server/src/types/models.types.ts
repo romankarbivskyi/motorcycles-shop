@@ -43,6 +43,12 @@ export interface Order {
   userId: number;
   totalPrice: number;
   shipAddress: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  productId: number;
+  quantity: number;
   status: OrderStatus;
   createAt: Date;
 }

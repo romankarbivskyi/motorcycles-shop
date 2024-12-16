@@ -8,6 +8,7 @@ import bodyParser from "body-parser";
 import productsRoute from "./routes/products.route";
 import categoriesRoute from "./routes/categories.route";
 import usersRoute from "./routes/users.route";
+import ordersRoute from "./routes/orders.route";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/products", productsRoute);
 app.use("/api/categories", categoriesRoute);
 app.use("/api/users", usersRoute);
+app.use("/api/orders", ordersRoute);
 
 app.use(errorMiddleware as any);
 

@@ -1,21 +1,67 @@
-export interface Attribute {
-  id: number;
-  name: string;
-  value: string;
+export interface User {
+  id?: number;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+  role?: UserRole;
 }
 
-export interface Image {
-  id: number;
-  url: string;
+export enum UserRole {
+  Admin = "Admin",
+  Customer = "Customer",
 }
 
 export interface Product {
   id?: number;
   make?: string;
   model?: string;
+  year?: number;
   price?: number;
   description?: string;
   stockQuantity?: number;
-  images?: Image[];
-  attributes?: Attribute[];
+  createAt?: Date;
+  categoryId?: number;
+}
+
+export interface Attribute {
+  id?: number;
+  name?: string;
+  value?: string;
+  productId?: number;
+}
+
+export interface Image {
+  id?: number;
+  url?: string;
+  productId?: number;
+}
+
+export interface Category {
+  id?: number;
+  name?: string;
+  description?: string;
+}
+
+export interface Order {
+  id?: number;
+  userId?: number;
+  totalPrice?: number;
+  shipAddress?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  productId?: number;
+  quantity?: number;
+  status?: OrderStatus;
+  createAt?: Date;
+}
+
+export enum OrderStatus {
+  Pending = "Pending",
+  Completed = "Completed",
+  Shipped = "Shipped",
+  Cancelled = "Cancelled",
 }
