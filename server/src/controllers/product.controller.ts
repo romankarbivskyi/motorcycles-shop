@@ -11,11 +11,11 @@ export class ProductController {
         search: searchString,
       });
 
-      if (products.length > 1) {
-        res.status(200).json(products);
+      if (productId) {
+        res.status(200).json(products[0]);
         return;
       }
-      res.status(200).json(products[0]);
+      res.status(200).json(products);
     } catch (err) {
       next(err);
     }

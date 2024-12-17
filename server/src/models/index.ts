@@ -4,3 +4,4 @@ export * from "./product.model";
 export * from "./attribute.model";
 export * from "./order.model";
 export * from "./image.model";
+export * from "./review.model";

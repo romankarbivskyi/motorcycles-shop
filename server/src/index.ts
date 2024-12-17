@@ -9,6 +9,7 @@ import productsRoute from "./routes/products.route";
 import categoriesRoute from "./routes/categories.route";
 import usersRoute from "./routes/users.route";
 import ordersRoute from "./routes/orders.route";
+import reviewsRoute from "./routes/reviews.route";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/products", productsRoute);
 app.use("/api/categories", categoriesRoute);
 app.use("/api/users", usersRoute);
 app.use("/api/orders", ordersRoute);
+app.use("/api/reviews", reviewsRoute);
 
 app.use(errorMiddleware as any);
 

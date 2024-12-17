@@ -1,15 +1,22 @@
 import { sequelize } from "../config/database";
 import { DataTypes } from "sequelize";
+import { User } from "./user.model";
 import { Product } from "./product.model";
-import { Order } from "./order.model";
 
-export const OrderItem = sequelize.define(
-  "OrderItem",
+export const Review = sequelize.define(
+  "Review",
   {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     productId: {
       type: DataTypes.INTEGER,
@@ -18,24 +25,25 @@ export const OrderItem = sequelize.define(
         key: "id",
       },
     },
-    quantity: {
-      type: DataTypes.INTEGER,
-      defaultValue: 1,
+    comment: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
-    price: {
+    rating: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    orderId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: Order,
-        key: "id",
-      },
+    createAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updateAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
   {
     timestamps: false,
-    tableName: "orderItems",
+    tableName: "reviews",
   },
 );

@@ -48,7 +48,7 @@ export const Order = sequelize.define(
     },
     createAt: {
       type: DataTypes.DATE,
-      defaultValue: Date.now(),
+      defaultValue: DataTypes.NOW,
     },
   },
   {
