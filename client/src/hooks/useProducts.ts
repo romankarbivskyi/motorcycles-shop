@@ -20,6 +20,7 @@ export function useProducts() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProductWithAssets[]>([]);
+  const [product, setProduct] = useState<ProductWithAssets | null>(null);
   const [productCount, setProductCount] = useState<number>(0);
 
   const fetchProducts = useCallback(
@@ -27,12 +28,12 @@ export function useProducts() {
       currentPage,
       itemsPerPage,
       categoryId,
-      productId,
+      search,
     }: {
       currentPage?: number;
       itemsPerPage?: number;
       categoryId?: number;
-      productId?: number;
+      search?: string;
     }) => {
       setIsLoading(true);
       setError(null);
@@ -41,7 +42,7 @@ export function useProducts() {
 
       try {
         const productRes = await API.get(
-          `/products${productId ? `/${productId}` : ""}${categoryId ? "/category/" + categoryId : ""}${offset ? `?offset=${offset}&limit=${itemsPerPage}` : ""}`,
+          `/products${categoryId ? "/category/" + categoryId : ""}${search ? `/search/${search}` : ""}${offset ? `?offset=${offset}&limit=${itemsPerPage}` : ""}`,
         );
         const countRes = await API.get(
           `/products/count${categoryId ? "/category/" + categoryId : ""}`,
@@ -56,6 +57,20 @@ export function useProducts() {
     },
     [],
   );
+
+  const fetchProductById = useCallback(async (productId: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await API.get(`/products/${productId}`);
+      setProduct(response.data);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch product.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const createProduct = useCallback(
     async (newProduct: Omit<ProductWithAssets, "id">) => {
@@ -115,10 +130,12 @@ export function useProducts() {
 
   return {
     products,
+    product,
     productCount,
     isLoading,
     error,
     fetchProducts,
+    fetchProductById,
     createProduct,
     updateProduct,
     deleteProduct,

@@ -12,12 +12,7 @@ router.get("/count", ProductController.getProductCount);
 router.get("/count/category/:categoryId", ProductController.getProductCount);
 router.get("/:productId", ProductController.getProducts);
 router.get("/category/:categoryId", ProductController.getProducts);
-router.get(
-  "/search/:searchString",
-  param("searchString").notEmpty(),
-  validateMiddleware,
-  ProductController.getProducts,
-);
+router.get("/search/:searchString", ProductController.getProducts);
 router.post(
   "/create",
   upload.array("images", 10),

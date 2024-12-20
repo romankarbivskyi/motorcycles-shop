@@ -14,15 +14,16 @@ export function ProductItem({
   const imageUrl =
     images?.length > 0
       ? `http://localhost:5000/static/${images[0].url}`
-      : "https://www.digitalocean.com/api/static-content/v1/images?src=%2F_next%2Fstatic%2Fmedia%2Fdefault-avatar.14b0d31d.jpeg&width=64";
+      : "https://www.digitalocean.com/api/static-content/v1/images?src=%2F_next%2Fstatic%2Fmedia%2Fdefault-avatar.14b0d31d.jpeg";
 
   return (
-    <NavLink to={`/products/${id}`} className="border p-4 rounded">
+    <NavLink
+      to={`/products/${id}`}
+      className="border p-4 rounded grid grid-rows-[auto,1fr,auto] gap-4 hover:bg-gray-600/10"
+    >
       <img
         src={imageUrl}
         alt={`Image of ${make} ${model} (${year})`}
-        width={64}
-        height={64}
         className="rounded object-cover"
         onError={(e) => {
           const target = e.target as HTMLImageElement;
@@ -31,9 +32,9 @@ export function ProductItem({
       />
       <div className="mt-2">
         <h3 className="text-lg font-medium">{`${make} ${model} (${year})`}</h3>
-        <p className="text-gray-600">Price: ${price}</p>
+        <p className="text-gray-600">Ціна: ${price}</p>
         <p className="text-sm text-gray-500">
-          Stock: {stockQuantity > 0 ? stockQuantity : "Out of stock"}
+          Кількість: {stockQuantity > 0 ? stockQuantity : "Out of stock"}
         </p>
       </div>
     </NavLink>

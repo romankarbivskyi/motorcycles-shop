@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom";
 
 export default function ProductsPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const { searchString } = useParams<{ searchString: string }>();
   console.log("category:", categoryId);
 
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -16,13 +17,18 @@ export default function ProductsPage() {
 
   const loadProducts = useCallback(() => {
     const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : undefined;
-    fetchProducts({ currentPage, itemsPerPage, categoryId: parsedCategoryId });
-  }, [currentPage, itemsPerPage, categoryId, fetchProducts]);
+    fetchProducts({
+      currentPage,
+      itemsPerPage,
+      categoryId: parsedCategoryId,
+      search: searchString,
+    });
+  }, [searchString, currentPage, itemsPerPage, categoryId, fetchProducts]);
 
   useEffect(() => {
     loadProducts();
     console.log("loading products");
-  }, [categoryId, currentPage, itemsPerPage, fetchProducts]);
+  }, [searchString, categoryId, currentPage, itemsPerPage, fetchProducts]);
 
   const onPageChange = useCallback(
     (page: number) => {

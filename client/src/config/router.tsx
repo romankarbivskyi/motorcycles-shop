@@ -21,6 +21,10 @@ export default [
     element: <ProductPage />,
   },
   {
+    path: "/products/search/:searchString",
+    element: <ProductsPage />,
+  },
+  {
     path: "/products/category/:categoryId",
     element: <ProductsPage />,
   },
