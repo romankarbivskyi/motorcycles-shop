@@ -1,4 +1,4 @@
-import { Order, Product, User, UserRole } from "../types/models.types";
+import { Order, OrderStatus, User, UserRole } from "../types/models.types";
 import { UserService } from "./user.service";
 import { ApiError } from "../utils/ApiError";
 import { ProductService } from "./product.service";
@@ -7,7 +7,7 @@ import { QueryTypes } from "sequelize";
 import { CreateOrder, GetOrderArgs } from "../types/order.types";
 
 export class OrderService {
-  static async getOrders({ userId, orderId }: GetOrderArgs) {
+  static async getOrders({ userId, orderId, offset, limit }: GetOrderArgs) {
     const orders = (await sequelize.query(
       `
     SELECT 
@@ -26,18 +26,33 @@ export class OrderService {
     FROM orders o
     LEFT JOIN "orderItems" oi ON oi."orderId" = o.id
     ${orderId ? `WHERE o.id = :orderId` : ""}
-    ${orderId ? `WHERE o."userId" = :userId` : ""}
+    ${userId ? `WHERE o."userId" = :userId` : ""}
     GROUP BY o.id
+    ${limit ? "LIMIT :limit" : ""}
+    ${offset ? "OFFSET :offset" : ""}
     `,
       {
         type: QueryTypes.SELECT,
-        replacements: { orderId },
+        replacements: { orderId, userId, offset, limit },
       },
     )) as Order[];
 
-    if (orders.length === 0) throw ApiError.NotFound("Orders not found");
-
     return orders;
+  }
+
+  static async getOrderCount(userId?: number): Promise<number> {
+    const [res] = (await sequelize.query(
+      `
+      SELECT COUNT(*) FROM orders
+      ${userId ? 'WHERE "userId" = :userId' : ""}
+        `,
+      {
+        replacements: { userId },
+        type: QueryTypes.SELECT,
+      },
+    )) as any;
+
+    return parseInt(res.count);
   }
 
   static async createOrder({
@@ -49,7 +64,7 @@ export class OrderService {
     userId,
     orderItems,
   }: CreateOrder) {
-    const existUser = (await UserService.getUsers(userId))[0];
+    const existUser = (await UserService.getUsers({ userId }))[0];
     if (!existUser) throw ApiError.NotFound("User not found");
 
     if (!orderItems)
@@ -82,33 +97,40 @@ export class OrderService {
     }
 
     const transaction = await sequelize.transaction();
-
     try {
-      const newOrder = (
-        (await sequelize.query(
-          `
-      INSERT INTO orders 
-      ("firstName", "lastName", phone, email, "totalPrice", "shipAddress", "userId", status) 
-      VALUES 
-      (:firstName, :lastName, :phone, :email, :totalPrice, :shipAddress, :userId, :status)
-      RETURNING *;
-      `,
-          {
-            replacements: {
-              firstName,
-              lastName,
-              phone,
-              email,
-              totalPrice,
-              shipAddress,
-              userId,
-              status: "Pending",
-            },
-            type: QueryTypes.INSERT,
-            transaction,
+      const [newOrders] = await sequelize.query(
+        `
+    INSERT INTO orders 
+    ("firstName", "lastName", phone, email, "totalPrice", "shipAddress", "userId", status) 
+    VALUES 
+    (:firstName, :lastName, :phone, :email, :totalPrice, :shipAddress, :userId, :status)
+    RETURNING *;
+  `,
+        {
+          replacements: {
+            firstName,
+            lastName,
+            phone,
+            email,
+            totalPrice,
+            shipAddress,
+            userId,
+            status: OrderStatus.Pending,
           },
-        )) as any
-      )[0][0] as Order;
+          type: QueryTypes.INSERT,
+          transaction,
+        },
+      );
+
+      if (
+        !newOrders ||
+        !Array.isArray(newOrders) ||
+        typeof newOrders[0] !== "object"
+      ) {
+        throw new Error("Order creation failed.");
+      }
+
+      const newOrder = newOrders[0];
 
       const orderId = newOrder.id;
 
@@ -146,30 +168,45 @@ export class OrderService {
   }
 
   static async deleteOrder(orderId: number, userId: number) {
-    const userOrder = (
-      await sequelize.query(
-        'SELECT o.id, o."userId", u.role FROM orders o JOIN users u ON o."userId" = u.id WHERE o.id = :orderId AND o."userId" = :userId',
-        {
-          replacements: {
-            orderId,
-            userId,
-          },
-          type: QueryTypes.SELECT,
-        },
-      )
-    )?.[0] as any as Order & User;
-
-    if (!userOrder) throw ApiError.NotFound("Orders not found");
-
-    if (userOrder.role != UserRole.Admin || userId !== userOrder.userId)
-      throw ApiError.Forbidden();
-
-    await sequelize.query(
-      'DELETE FROM orders WHERE id = :orderId AND "userId" = :userId',
+    const usersWithOrder = await sequelize.query(
+      'SELECT o.id, o."userId", u.role FROM orders o JOIN users u ON o."userId" = u.id WHERE o.id = :orderId AND o."userId" = :userId',
       {
-        replacements: { orderId, userId },
-        type: QueryTypes.DELETE,
+        replacements: {
+          orderId,
+          userId,
+        },
+        type: QueryTypes.SELECT,
       },
     );
+
+    if (
+      !usersWithOrder ||
+      !Array.isArray(usersWithOrder) ||
+      typeof usersWithOrder[0] !== "object"
+    ) {
+      throw new Error("Orders not found");
+    }
+
+    const userWithOrder = usersWithOrder[0] as User & Order;
+
+    if (userWithOrder.role != UserRole.Admin || userId !== userWithOrder.userId)
+      throw ApiError.Forbidden();
+
+    const transaction = await sequelize.transaction();
+    try {
+      await sequelize.query(
+        'DELETE FROM orders WHERE id = :orderId AND "userId" = :userId',
+        {
+          replacements: { orderId, userId },
+          type: QueryTypes.DELETE,
+          transaction,
+        },
+      );
+
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 }

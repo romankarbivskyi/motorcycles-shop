@@ -1,11 +1,11 @@
 export interface User {
-  id?: number;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  email?: string;
-  password?: string;
-  role?: UserRole;
+  id: number;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  password: string;
+  role: UserRole;
 }
 
 export enum UserRole {
@@ -14,49 +14,47 @@ export enum UserRole {
 }
 
 export interface Product {
-  id?: number;
-  make?: string;
-  model?: string;
-  year?: number;
-  price?: number;
-  description?: string;
-  stockQuantity?: number;
-  createAt?: Date;
-  categoryId?: number;
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  description: string;
+  stockQuantity: number;
+  createAt: Date;
+  categoryId: number;
 }
 
 export interface Attribute {
-  id?: number;
-  name?: string;
-  value?: string;
-  productId?: number;
+  id: number;
+  name: string;
+  value: string;
+  productId: number;
 }
 
 export interface Image {
-  id?: number;
-  url?: string;
-  productId?: number;
+  id: number;
+  url: string;
+  productId: number;
 }
 
 export interface Category {
-  id?: number;
-  name?: string;
-  description?: string;
+  id: number;
+  name: string;
+  description: string;
 }
 
 export interface Order {
-  id?: number;
-  userId?: number;
-  totalPrice?: number;
-  shipAddress?: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  email?: string;
-  productId?: number;
-  quantity?: number;
-  status?: OrderStatus;
-  createAt?: Date;
+  id: number;
+  userId: number;
+  totalPrice: number;
+  shipAddress: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  status: OrderStatus;
+  createAt: Date;
 }
 
 export enum OrderStatus {
@@ -64,4 +62,36 @@ export enum OrderStatus {
   Completed = "Completed",
   Shipped = "Shipped",
   Cancelled = "Cancelled",
+}
+
+export interface OrderItem {
+  id: number;
+  orderId: number;
+  productId: number;
+  quantity: number;
+  price: number;
+}
+
+export interface Review {
+  id: number;
+  userId: number;
+  productId: number;
+  rating: number;
+  comment: string;
+  createAt: string;
+  updateAt?: string;
+}
+
+export interface ProductWithAssets {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: number | string;
+  description: string;
+  stockQuantity: number;
+  createAt?: Date;
+  categoryId: number;
+  attributes: Attribute[];
+  images: Image[];
 }

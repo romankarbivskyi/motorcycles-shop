@@ -10,6 +10,7 @@ import categoriesRoute from "./routes/categories.route";
 import usersRoute from "./routes/users.route";
 import ordersRoute from "./routes/orders.route";
 import reviewsRoute from "./routes/reviews.route";
+import path from "path";
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use(express.static("uploads"));
+app.use("/static", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoute);
 app.use("/api/products", productsRoute);

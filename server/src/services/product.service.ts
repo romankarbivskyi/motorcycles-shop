@@ -14,6 +14,9 @@ export class ProductService {
   static async getProducts({
     productId,
     search,
+    categoryId,
+    offset,
+    limit,
   }: GetProductArgs): Promise<Product[]> {
     console.log(search);
     const products = await sequelize.query(
@@ -34,29 +37,40 @@ export class ProductService {
       LEFT JOIN "attributes" a ON a."productId" = p."id"
       LEFT JOIN "images" i ON i."productId" = p."id"
       ${productId ? `WHERE p."id" = :productId` : ""}
-      ${
-        search
-          ? `WHERE p.make ILIKE :search OR p.model ILIKE :search`
-          : search && productId
-            ? `AND (p.make ILIKE :search OR p.model ILIKE :search)`
-            : ""
-      }
+      ${search ? `WHERE p.make ILIKE :search OR p.model ILIKE :search` : ""}
+      ${categoryId ? `WHERE p."categoryId" = :categoryId` : ""}
       GROUP BY p."id"
+      ${limit ? "LIMIT :limit" : ""}
+      ${offset ? "OFFSET :offset" : ""}
     `,
       {
         replacements: {
           productId,
           search: `%${search}%`,
+          categoryId,
+          limit,
+          offset,
         },
         type: QueryTypes.SELECT,
       },
     );
 
-    if (!products.length) {
-      throw ApiError.NotFound("Products not found");
-    }
-
     return products as Product[];
+  }
+
+  static async getProductCount(categoryId?: number): Promise<number> {
+    const [res] = (await sequelize.query(
+      `
+SELECT COUNT(*) FROM products
+${categoryId ? 'WHERE "categoryId" = :categoryId' : ""}
+`,
+      {
+        replacements: { categoryId },
+        type: QueryTypes.SELECT,
+      },
+    )) as any;
+
+    return parseInt(res.count);
   }
 
   static async createProduct({
@@ -79,26 +93,34 @@ export class ProductService {
 
     const transaction = await sequelize.transaction();
     try {
-      const newProduct = (
-        (await sequelize.query(
-          `INSERT INTO products (make, model, year, price, description, "stockQuantity", "categoryId") 
+      const [newProducts] = await sequelize.query(
+        `INSERT INTO products (make, model, year, price, description, "stockQuantity", "categoryId") 
    VALUES (:make, :model, :year, :price, :description, :stockQuantity, :categoryId) 
-   RETURNING *`,
-          {
-            replacements: {
-              make,
-              model,
-              year,
-              price,
-              description,
-              stockQuantity: stockQuantity ?? 0,
-              categoryId,
-            },
-            type: QueryTypes.INSERT,
-            transaction,
+   RETURNING * `,
+        {
+          replacements: {
+            make,
+            model,
+            year,
+            price,
+            description,
+            stockQuantity: stockQuantity ?? 0,
+            categoryId,
           },
-        )) as any
-      )[0][0] as Product;
+          type: QueryTypes.INSERT,
+          transaction,
+        },
+      );
+
+      if (
+        !newProducts ||
+        !Array.isArray(newProducts) ||
+        newProducts.length == 0
+      ) {
+        throw new Error("Product creation failed");
+      }
+
+      const newProduct = newProducts[0] as Product;
 
       if (images) {
         for (const url of images) {
@@ -136,7 +158,11 @@ export class ProductService {
       }
 
       await transaction.commit();
-      return newProduct;
+      return (
+        await this.getProducts({
+          productId: newProduct.id,
+        })
+      )[0];
     } catch (err) {
       await transaction.rollback();
       throw err;
@@ -170,49 +196,44 @@ export class ProductService {
 
     const transaction = await sequelize.transaction();
     try {
-      await this.getProducts({ productId: id });
+      const existProducts = await this.getProducts({ productId: id });
 
-      if (deleteImages) {
-        for (const url of deleteImages) {
-          await sequelize.query("DELETE FROM images WHERE url = :url", {
-            type: QueryTypes.DELETE,
-            replacements: { url },
-            transaction,
-          });
-          try {
-            await fs.promises.unlink(
-              path.join(__dirname, "../../uploads", url),
-            );
-          } catch (err) {
-            console.error("Failed to delete file:", url, err);
-          }
-        }
+      if (!existProducts.length) {
+        throw ApiError.NotFound("Products not found");
       }
 
-      const updatedProduct = (
-        await sequelize.query(
-          `UPDATE products 
+      const [updatedProducts] = await sequelize.query(
+        `UPDATE products 
        SET make = :make, model = :model, year = :year, price = :price, 
            description = :description, "stockQuantity" = :stockQuantity, 
            "categoryId" = :categoryId
        WHERE id = :id 
        RETURNING *`,
-          {
-            replacements: {
-              make: make ?? null,
-              model: model ?? null,
-              year: year ?? null,
-              price: price ?? null,
-              description: description ?? null,
-              stockQuantity: stockQuantity ?? 0,
-              categoryId: categoryId ?? null,
-              id,
-            },
-            type: QueryTypes.UPDATE,
-            transaction,
+        {
+          replacements: {
+            make: make ?? null,
+            model: model ?? null,
+            year: year ?? null,
+            price: price ?? null,
+            description: description ?? null,
+            stockQuantity: stockQuantity ?? 0,
+            categoryId: categoryId ?? null,
+            id,
           },
-        )
-      )?.[0]?.[0] as unknown as Product;
+          type: QueryTypes.UPDATE,
+          transaction,
+        },
+      );
+
+      if (
+        !updatedProducts ||
+        !Array.isArray(updatedProducts) ||
+        typeof updatedProducts[0] !== "object"
+      ) {
+        throw new Error("Product update failed");
+      }
+
+      const updatedProduct = updatedProducts[0] as Product;
 
       if (deleteAttributes) {
         for (const attributeId of deleteAttributes) {
@@ -239,6 +260,23 @@ export class ProductService {
         }
       }
 
+      if (deleteImages) {
+        for (const url of deleteImages) {
+          await sequelize.query("DELETE FROM images WHERE url = :url", {
+            type: QueryTypes.DELETE,
+            replacements: { url },
+            transaction,
+          });
+          try {
+            await fs.promises.unlink(
+              path.join(__dirname, "../../uploads", url),
+            );
+          } catch (err) {
+            console.error("Failed to delete file:", url, err);
+          }
+        }
+      }
+
       if (images) {
         for (const url of images) {
           await sequelize.query(
@@ -253,7 +291,11 @@ export class ProductService {
       }
 
       await transaction.commit();
-      return updatedProduct;
+      return (
+        await this.getProducts({
+          productId: updatedProduct.id,
+        })
+      )[0];
     } catch (error) {
       await transaction.rollback();
       throw error;
@@ -261,11 +303,24 @@ export class ProductService {
   }
 
   static async deleteProduct(id: number) {
-    await this.getProducts({ productId: id });
+    const existProducts = await this.getProducts({ productId: id });
 
-    await sequelize.query("DELETE FROM products WHERE id = :id", {
-      replacements: { id },
-      type: QueryTypes.DELETE,
-    });
+    if (!existProducts.length) {
+      throw ApiError.NotFound("Products not found");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      await sequelize.query("DELETE FROM products WHERE id = :id", {
+        replacements: { id },
+        type: QueryTypes.DELETE,
+        transaction,
+      });
+
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 }

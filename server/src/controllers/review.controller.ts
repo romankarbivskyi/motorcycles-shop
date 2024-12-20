@@ -1,14 +1,26 @@
 import { Request, Response, NextFunction } from "express";
 import { ReviewService } from "../services/review.service";
 import { ApiError } from "../utils/ApiError";
-import { validationResult } from "express-validator";
 
 export class ReviewController {
   static async getReviews(req: Request, res: Response, next: NextFunction) {
     try {
       const reviewId = parseInt(req.params.reviewId);
       const productId = parseInt(req.params.productId);
-      const reviews = await ReviewService.getReviews(reviewId, productId);
+
+      const limit: number | undefined = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const offset: number | undefined = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : undefined;
+
+      const reviews = await ReviewService.getReviews({
+        reviewId,
+        productId,
+        limit,
+        offset,
+      });
 
       if (reviewId) {
         const review = reviews[0];
@@ -17,6 +29,17 @@ export class ReviewController {
         return;
       }
       res.status(200).json(reviews);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getReviewCount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const productId = parseInt(req.params.productId);
+      const count = await ReviewService.getReviewCount(productId);
+
+      res.status(200).json(count);
     } catch (err) {
       next(err);
     }

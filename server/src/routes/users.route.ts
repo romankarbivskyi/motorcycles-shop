@@ -1,12 +1,19 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { checkSchema } from "express-validator";
+import { param } from "express-validator";
 import { validateMiddleware } from "../middlewares/validate.middleware";
 
 const router = Router();
 
 router.get("/", authMiddleware(true), UserController.getUsers);
-router.get("/:userId", authMiddleware(), UserController.getUsers);
+router.get("/count", authMiddleware(true), UserController.getUserCount);
+router.get(
+  "/:userId",
+  [param("userId").notEmpty(), param("userId").isInt()],
+  validateMiddleware,
+  authMiddleware(),
+  UserController.getUsers,
+);
 
 export default router;

@@ -1,4 +1,3 @@
-import { LogUser, RegUser } from "../types/user.types";
 import { sequelize } from "../config/database";
 import bcrypt from "bcrypt";
 import { QueryTypes } from "sequelize";
@@ -7,13 +6,38 @@ import { ApiError } from "../utils/ApiError";
 import { TokenService } from "./token.service";
 
 export class UserService {
+  static async getUsers({
+    userId,
+    limit,
+    offset,
+  }: {
+    userId?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<Omit<User, "password">[]> {
+    const users = await sequelize.query(
+      `
+        SELECT id, "firstName", "lastName", phone, email, role FROM users 
+        ${userId ? `WHERE id = :userId` : ""}
+        ${limit ? "LIMIT :limit" : ""}
+        ${offset ? "OFFSET :offset" : ""}
+        `,
+      {
+        replacements: { userId, limit, offset },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    return users as Omit<User, "password">[];
+  }
+
   static async registerUser({
     firstName,
     lastName,
     phone,
     email,
     password,
-  }: RegUser) {
+  }: Omit<User, "id">) {
     const existUser = (
       await sequelize.query("SELECT * FROM users WHERE email = :email", {
         replacements: { email },
@@ -25,8 +49,9 @@ export class UserService {
 
     const hashPassword = await bcrypt.hash(password, 12);
 
-    const newUser = (
-      await sequelize.query(
+    const transaction = await sequelize.transaction();
+    try {
+      const [newUsers] = await sequelize.query(
         'INSERT INTO users ("firstName", "lastName", phone, email, password) VALUES (:firstName, :lastName, :phone, :email, :password) RETURNING *',
         {
           replacements: {
@@ -37,32 +62,49 @@ export class UserService {
             password: hashPassword,
           },
         },
-      )
-    )[0][0] as User;
+      );
 
-    const accessToken = TokenService.generateAccessToken({
-      id: newUser.id,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      phone: newUser.phone,
-      email: newUser.email,
-      role: newUser.role,
-    });
+      if (
+        !newUsers ||
+        !Array.isArray(newUsers) ||
+        typeof newUsers[0] !== "object"
+      ) {
+        throw new Error("User register failed.");
+      }
 
-    return {
-      user: {
+      const newUser = newUsers[0] as User;
+
+      const accessToken = TokenService.generateAccessToken({
         id: newUser.id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         phone: newUser.phone,
         email: newUser.email,
         role: newUser.role,
-      },
-      accessToken: accessToken,
-    };
+      });
+
+      await transaction.commit();
+      return {
+        user: {
+          id: newUser.id,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          phone: newUser.phone,
+          email: newUser.email,
+          role: newUser.role,
+        },
+        accessToken: accessToken,
+      };
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 
-  static async loginUser({ email, password }: LogUser) {
+  static async loginUser({
+    email,
+    password,
+  }: Pick<User, "email" | "password">) {
     const existUser = (
       await sequelize.query("SELECT * FROM users WHERE email = :email", {
         replacements: { email },
@@ -98,16 +140,11 @@ export class UserService {
     };
   }
 
-  static async getUsers(userId?: number) {
-    const users = (await sequelize.query(
-      `SELECT id, "firstName", "lastName", phone, email, role FROM users ${userId ? `WHERE id = ${userId}` : ""}`,
-      {
-        type: QueryTypes.SELECT,
-      },
-    )) as User[];
+  static async getUserCount(): Promise<number> {
+    const [res] = (await sequelize.query(`SELECT COUNT(*) FROM users`, {
+      type: QueryTypes.SELECT,
+    })) as any;
 
-    if (users.length == 0) throw ApiError.NotFound("Users not found");
-
-    return users;
+    return parseInt(res.count);
   }
 }

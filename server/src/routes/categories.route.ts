@@ -7,6 +7,7 @@ import { validateMiddleware } from "../middlewares/validate.middleware";
 const router = Router();
 
 router.get("/", CategoryController.getCategories);
+router.get("/count", CategoryController.getCategoryCount);
 router.post(
   "/create",
   checkSchema({

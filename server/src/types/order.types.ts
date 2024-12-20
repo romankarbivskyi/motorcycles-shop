@@ -1,3 +1,5 @@
+import { OrderItem } from "./models.types";
+
 export interface CreateOrder {
   firstName: string;
   lastName: string;
@@ -5,13 +7,12 @@ export interface CreateOrder {
   email: string;
   shipAddress: string;
   userId: number;
-  orderItems: {
-    productId: number;
-    quantity: number;
-  }[];
+  orderItems: Omit<OrderItem, "id" | "orderId" | "price">[];
 }
 
 export interface GetOrderArgs {
   orderId?: number;
   userId?: number;
+  offset?: number;
+  limit?: number;
 }

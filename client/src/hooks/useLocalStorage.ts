@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export function useLocalStorage<T>(key: string, defaultValue: T) {
+export function useLocalStorage<T>(key: string, defaultValue?: T) {
   const setItem = (value: T) => {
     window.localStorage.setItem(key, JSON.stringify(value));
   };
@@ -8,7 +8,7 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
   const getItem = () => {
     try {
       const value = localStorage.getItem(key);
-      return (JSON.parse(value) as T) || null;
+      return value ? (JSON.parse(value) as T) : null;
     } catch (err) {
       console.log(err);
     }
@@ -23,7 +23,7 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
   };
 
   useEffect(() => {
-    setItem(defaultValue);
+    if (defaultValue) setItem(defaultValue);
   }, []);
 
   return { setItem, getItem, removeItem };

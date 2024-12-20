@@ -1,19 +1,126 @@
-import { useEffect, useState } from "react";
-import { Product } from "../types/global.ts";
+import { useEffect, useState, useCallback } from "react";
+import { ProductWithAssets } from "../types/global.ts";
 import { API } from "../utils/api.ts";
 
-export const useProducts = (productId?: number) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [data, setData] = useState<Product | null>(null);
+export interface UpdateProductArgs {
+  id: number;
+  make?: string;
+  model?: string;
+  year?: number;
+  price?: number;
+  description?: string;
+  stockQuantity?: number;
+  deleteImages?: string;
+  categoryId?: number;
+  attributes?: string[];
+  deleteAttributes?: string[];
+}
 
-  useEffect(() => {
+export function useProducts() {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<ProductWithAssets[]>([]);
+  const [productCount, setProductCount] = useState<number>(0);
+
+  const fetchProducts = useCallback(
+    async ({
+      currentPage,
+      itemsPerPage,
+      categoryId,
+      productId,
+    }: {
+      currentPage?: number;
+      itemsPerPage?: number;
+      categoryId?: number;
+      productId?: number;
+    }) => {
+      setIsLoading(true);
+      setError(null);
+
+      const offset = (currentPage - 1) * itemsPerPage;
+
+      try {
+        const productRes = await API.get(
+          `/products${productId ? `/${productId}` : ""}${categoryId ? "/category/" + categoryId : ""}${offset ? `?offset=${offset}&limit=${itemsPerPage}` : ""}`,
+        );
+        const countRes = await API.get(
+          `/products/count${categoryId ? "/category/" + categoryId : ""}`,
+        );
+        setProducts(productRes.data);
+        setProductCount(countRes.data);
+      } catch (err) {
+        setError(err.message || "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
+  const createProduct = useCallback(
+    async (newProduct: Omit<ProductWithAssets, "id">) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await API.post("/products/create", newProduct);
+        setProducts((prev) => [...prev, response.data]);
+      } catch (err) {
+        setError(err.message || "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
+  const updateProduct = useCallback(
+    async (updatedProduct: Partial<UpdateProductArgs>) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await API.put(`/products/update/`, updatedProduct);
+        const updatedProductData = response.data;
+        setProducts((prev) =>
+          prev.map((product) =>
+            product.id === updatedProduct.id
+              ? { ...product, ...updatedProductData }
+              : product,
+          ),
+        );
+      } catch (err) {
+        setError(err.message || "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
+  const deleteProduct = useCallback(async (productId: number) => {
     setIsLoading(true);
-    API.get(`/products/`)
-      .then((res) => setData(res.data))
-      .catch((err) => setError(err));
-    setIsLoading(false);
+    setError(null);
+
+    try {
+      await API.delete(`/products/delete/${productId}`);
+      setProducts((prev) => prev.filter((product) => product.id !== productId));
+      setProductCount((prev) => prev - 1);
+    } catch (err) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { isLoading, error, data };
-};
+  return {
+    products,
+    productCount,
+    isLoading,
+    error,
+    fetchProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+  };
+}

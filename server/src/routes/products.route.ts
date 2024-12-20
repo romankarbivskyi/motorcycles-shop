@@ -8,7 +8,10 @@ import { validateMiddleware } from "../middlewares/validate.middleware";
 const router = Router();
 
 router.get("/", ProductController.getProducts);
+router.get("/count", ProductController.getProductCount);
+router.get("/count/category/:categoryId", ProductController.getProductCount);
 router.get("/:productId", ProductController.getProducts);
+router.get("/category/:categoryId", ProductController.getProducts);
 router.get(
   "/search/:searchString",
   param("searchString").notEmpty(),

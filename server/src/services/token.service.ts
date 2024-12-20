@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError";
 import { User } from "../types/models.types";
 
 export class TokenService {
-  static generateAccessToken(tokenPayload: User) {
+  static generateAccessToken(tokenPayload: Omit<User, "password">) {
     return jwt.sign(
       {
         exp: Math.floor(Date.now() / 1000) + 60 * 60,

@@ -6,7 +6,23 @@ export class OrderController {
   static async getOrders(req: Request, res: Response, next: NextFunction) {
     try {
       const orderId = parseInt(req.params.orderId);
-      const orders = await OrderService.getOrders({ orderId });
+      const userId = parseInt(req.params.userId);
+
+      const limit: number | undefined = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const offset: number | undefined = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : undefined;
+
+      if (userId && (req as any).user.id != userId) throw ApiError.Forbidden();
+
+      const orders = await OrderService.getOrders({
+        userId,
+        orderId,
+        limit,
+        offset,
+      });
 
       if (orderId) {
         const order = orders[0];
@@ -23,15 +39,12 @@ export class OrderController {
     }
   }
 
-  static async getUserOrders(req: Request, res: Response, next: NextFunction) {
+  static async getOrderCount(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = parseInt(req.params.userId);
+      const count = await OrderService.getOrderCount(userId);
 
-      if ((req as any).user.id != userId) throw ApiError.Forbidden();
-
-      const orders = await OrderService.getOrders({ userId });
-
-      res.status(200).json(orders);
+      res.status(200).json(count);
     } catch (err) {
       next(err);
     }

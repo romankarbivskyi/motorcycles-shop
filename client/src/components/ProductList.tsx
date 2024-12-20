@@ -1,8 +1,14 @@
-import { useProducts } from "../hooks/useProducts.ts";
+import { Image, ProductWithAssets } from "../types/global.ts";
+import { ProductItem } from "./ProductItem.tsx";
 
-export default function ProductList() {
-  const { isLoading, data, error } = useProducts();
+interface ProductListProps {
+  data?: ProductWithAssets[];
+}
 
-  if (isLoading) return <div>Loading...</div>;
-  return <div>ok</div>;
+export default function ProductList({ data }: ProductListProps) {
+  return (
+    <div className="grid grid-cols-5 gap-5 w-full p-10">
+      {data?.map((data) => <ProductItem data={data} />)}
+    </div>
+  );
 }

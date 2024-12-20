@@ -7,11 +7,13 @@ import { validateMiddleware } from "../middlewares/validate.middleware";
 const router = Router();
 
 router.get("/", authMiddleware(true), OrderController.getOrders);
+router.get("/count", authMiddleware(), OrderController.getOrderCount);
 router.get(
-  "/user/:userId",
-  authMiddleware(true),
-  OrderController.getUserOrders,
+  "/count/user/:userId",
+  authMiddleware(),
+  OrderController.getOrderCount,
 );
+router.get("/user/:userId", authMiddleware(), OrderController.getOrders);
 router.get("/:oderId", authMiddleware(), OrderController.getOrders);
 router.post(
   "/create",

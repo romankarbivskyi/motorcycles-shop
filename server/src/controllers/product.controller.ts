@@ -6,9 +6,21 @@ export class ProductController {
     try {
       const productId = parseInt(req.params.productId);
       const searchString = req.params.searchString;
+      const categoryId = parseInt(req.params.categoryId);
+
+      const limit: number | undefined = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const offset: number | undefined = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : undefined;
+
       const products = await ProductService.getProducts({
         productId,
         search: searchString,
+        categoryId,
+        limit,
+        offset,
       });
 
       if (productId) {
@@ -16,6 +28,21 @@ export class ProductController {
         return;
       }
       res.status(200).json(products);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getProductCount(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const count = await ProductService.getProductCount(categoryId);
+
+      res.status(200).json(count);
     } catch (err) {
       next(err);
     }

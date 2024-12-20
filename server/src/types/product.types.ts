@@ -32,4 +32,7 @@ export interface CreateProductArgs {
 export interface GetProductArgs {
   productId?: number;
   search?: string;
+  categoryId?: number;
+  offset?: number;
+  limit?: number;
 }

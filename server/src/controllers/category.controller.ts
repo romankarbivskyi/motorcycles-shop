@@ -4,9 +4,30 @@ import { CategoryService } from "../services/category.service";
 export class CategoryController {
   static async getCategories(req: Request, res: Response, next: NextFunction) {
     try {
-      const categories = await CategoryService.getCategories();
+      const limit: number | undefined = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const offset: number | undefined = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : undefined;
+
+      const categories = await CategoryService.getCategories({ limit, offset });
 
       res.status(200).json(categories);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getCategoryCount(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const count = await CategoryService.getCategoryCount();
+
+      res.status(200).json(count);
     } catch (err) {
       next(err);
     }

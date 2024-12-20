@@ -4,27 +4,46 @@ import { ApiError } from "../utils/ApiError";
 import { Category } from "../types/models.types";
 
 export class CategoryService {
-  static async getCategories(categoryId?: number) {
-    const categories = await sequelize.query(
-      `SELECT * FROM categories ${categoryId && `WHERE id=${categoryId}`}`,
+  static async getCategories({
+    categoryId,
+    limit,
+    offset,
+  }: {
+    categoryId?: number;
+    limit?: number;
+    offset?: number;
+  }) {
+    const categories = (await sequelize.query(
+      `
+          SELECT * FROM categories 
+          ${categoryId ? `WHERE id = :categoryId` : ""}
+          ${limit ? "LIMIT :limit" : ""}
+          ${offset ? "OFFSET :offset" : ""}
+      `,
       {
+        replacements: { categoryId, limit, offset },
         type: QueryTypes.SELECT,
       },
-    );
-
-    if (categories.length == 0) {
-      throw ApiError.NotFound("Categories not found");
-    }
+    )) as Category[];
 
     return categories;
+  }
+
+  static async getCategoryCount(): Promise<number> {
+    const [res] = (await sequelize.query(`SELECT COUNT(*) FROM categories`, {
+      type: QueryTypes.SELECT,
+    })) as any;
+
+    return parseInt(res.count);
   }
 
   static async createCategory({
     name,
     description,
-  }: Category): Promise<Category> {
-    const newCategory = (
-      (await sequelize.query(
+  }: Omit<Category, "id">): Promise<Category> {
+    const transaction = await sequelize.transaction();
+    try {
+      const [newCategories] = await sequelize.query(
         "INSERT INTO categories (name, description) VALUES (:name, :description) RETURNING *",
         {
           replacements: {
@@ -32,37 +51,83 @@ export class CategoryService {
             description,
           },
           type: QueryTypes.INSERT,
+          transaction,
         },
-      )) as any
-    )[0][0] as Category;
+      );
 
-    return newCategory;
+      if (
+        !newCategories ||
+        !Array.isArray(newCategories) ||
+        typeof newCategories[0] !== "object"
+      ) {
+        throw new Error("Category creation failed");
+      }
+
+      await transaction.commit();
+      return newCategories[0] as Category;
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 
   static async updateCategory({ id, name, description }: Category) {
-    await this.getCategories(id);
+    const existCategories = await this.getCategories({ categoryId: id });
 
-    const updatedCategory = await sequelize.query(
-      "UPDATE categories SET name = :name, description = :description WHERE id = :id RETURNING *",
-      {
-        replacements: {
-          id,
-          name,
-          description,
+    if (!existCategories.length) {
+      throw ApiError.NotFound("Categories not found");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      const [updatedCategories] = await sequelize.query(
+        "UPDATE categories SET name = :name, description = :description WHERE id = :id RETURNING *",
+        {
+          replacements: {
+            id,
+            name,
+            description,
+          },
+          type: QueryTypes.UPDATE,
+          transaction,
         },
-        type: QueryTypes.UPDATE,
-      },
-    );
+      );
 
-    return (updatedCategory as any)[0][0];
+      if (
+        !updatedCategories ||
+        !Array.isArray(updatedCategories) ||
+        typeof updatedCategories[0] !== "object"
+      ) {
+        throw new Error("Category update failed");
+      }
+
+      await transaction.commit();
+      return updatedCategories[0] as Category;
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 
   static async deleteCategory(id: number) {
-    await this.getCategories(id);
+    const existCategories = await this.getCategories({ categoryId: id });
 
-    await sequelize.query("DELETE FROM categories WHERE id = :id", {
-      replacements: { id },
-      type: QueryTypes.DELETE,
-    });
+    if (!existCategories.length) {
+      throw ApiError.NotFound("Categories not found");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      await sequelize.query("DELETE FROM categories WHERE id = :id", {
+        replacements: { id },
+        type: QueryTypes.DELETE,
+        transaction,
+      });
+
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 }
