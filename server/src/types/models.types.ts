@@ -64,6 +64,9 @@ export interface OrderItem {
   productId: number;
   quantity: number;
   price: number;
+  make: string;
+  model: string;
+  year: number;
 }
 
 export interface Review {
@@ -74,4 +77,10 @@ export interface Review {
   comment: string;
   createAt: string;
   updateAt?: string;
+}
+
+export interface Image {
+  id: number;
+  url: string;
+  productId: number;
 }

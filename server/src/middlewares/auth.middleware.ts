@@ -11,8 +11,8 @@ export const authMiddleware = (onlyAdmin?: boolean) => {
       throw ApiError.Unauthorized();
     }
 
-    const accessToken = authHeader.split(" ")[1];
-    const user = TokenService.validateToken(accessToken);
+    const token = authHeader.split(" ")[1];
+    const user = TokenService.validateToken(token);
 
     if (onlyAdmin && user.role !== UserRole.Admin) {
       throw ApiError.Forbidden();

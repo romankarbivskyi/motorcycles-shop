@@ -7,13 +7,8 @@ export class ReviewController {
     try {
       const reviewId = parseInt(req.params.reviewId);
       const productId = parseInt(req.params.productId);
-
-      const limit: number | undefined = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
-      const offset: number | undefined = req.query.offset
-        ? parseInt(req.query.offset as string)
-        : undefined;
+      const limit = parseInt(req.query.limit as string);
+      const offset = parseInt(req.query.offset as string);
 
       const reviews = await ReviewService.getReviews({
         reviewId,
@@ -24,10 +19,10 @@ export class ReviewController {
 
       if (reviewId) {
         const review = reviews[0];
-
         res.status(200).json(review);
         return;
       }
+
       res.status(200).json(reviews);
     } catch (err) {
       next(err);
@@ -62,7 +57,12 @@ export class ReviewController {
     try {
       const data = req.body;
       const userId = (req as any).user.id;
-      const updateReview = await ReviewService.updateReview(data, userId);
+      const reviewId = parseInt(req.params.reviewId);
+      const updateReview = await ReviewService.updateReview(
+        reviewId,
+        data,
+        userId,
+      );
 
       res.status(200).json(updateReview);
     } catch (err) {

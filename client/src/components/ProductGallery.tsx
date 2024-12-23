@@ -1,4 +1,4 @@
-import { Image } from "../types/global.ts";
+import { Image } from "../global/types.ts";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import "swiper/css";
@@ -21,6 +21,7 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
       scrollbar={{ draggable: true }}
       onSwiper={(swiper) => console.log(swiper)}
       onSlideChange={() => console.log("slide change")}
+      className="flex-1"
     >
       {images.map((image, index) => (
         <SwiperSlide>

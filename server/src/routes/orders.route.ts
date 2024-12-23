@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { OrderController } from "../controllers/order.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { checkSchema } from "express-validator";
+import { checkSchema, param } from "express-validator";
 import { validateMiddleware } from "../middlewares/validate.middleware";
 
 const router = Router();
@@ -9,14 +9,21 @@ const router = Router();
 router.get("/", authMiddleware(true), OrderController.getOrders);
 router.get("/count", authMiddleware(), OrderController.getOrderCount);
 router.get(
-  "/count/user/:userId",
+  "/user/:userId",
+  [param("userId").notEmpty(), param("userId").isInt()],
+  validateMiddleware,
   authMiddleware(),
-  OrderController.getOrderCount,
+  OrderController.getOrders,
 );
-router.get("/user/:userId", authMiddleware(), OrderController.getOrders);
-router.get("/:oderId", authMiddleware(), OrderController.getOrders);
+router.get(
+  "/:oderId",
+  [param("orderId").notEmpty(), param("orderId").isInt()],
+  validateMiddleware,
+  authMiddleware(),
+  OrderController.getOrders,
+);
 router.post(
-  "/create",
+  "/",
   checkSchema({
     firstName: {
       isString: {
@@ -98,10 +105,6 @@ router.post(
   authMiddleware(),
   OrderController.createOrder,
 );
-router.delete(
-  "/delete/:orderId",
-  authMiddleware(),
-  OrderController.deleteOrder,
-);
+router.delete("/:orderId", authMiddleware(), OrderController.deleteOrder);
 
 export default router;

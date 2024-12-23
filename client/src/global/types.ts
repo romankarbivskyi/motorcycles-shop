@@ -70,6 +70,9 @@ export interface OrderItem {
   productId: number;
   quantity: number;
   price: number;
+  make: string;
+  model: string;
+  year: number;
 }
 
 export interface Review {
@@ -92,6 +95,18 @@ export interface ProductWithAssets {
   stockQuantity: number;
   createAt?: Date;
   categoryId: number;
+  categoryName: string;
   attributes: Attribute[];
   images: Image[];
 }
+
+export interface OrderWithItems extends Order {
+  orderItems: OrderItem[];
+}
+
+export interface FetchPaginationParams {
+  limit?: number;
+  offset?: number;
+}
+
+export type ReviewWithUserName = Review & Pick<User, "firstName" | "lastName">;

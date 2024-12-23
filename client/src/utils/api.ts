@@ -6,7 +6,9 @@ export const API = axios.create({
 
 API.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
+    const authData = JSON.parse(localStorage.getItem("authData") || "{}");
+
+    const token = authData?.token;
 
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
@@ -15,6 +17,21 @@ API.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  },
+);
+
+API.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("authData");
+
+      window.location.href = "/auth/login";
+    }
+
     return Promise.reject(error);
   },
 );

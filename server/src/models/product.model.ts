@@ -33,7 +33,7 @@ export const Product = sequelize.define(
     },
     createAt: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+      allowNull: false,
     },
     categoryId: {
       type: DataTypes.INTEGER,

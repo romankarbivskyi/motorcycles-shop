@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/ApiError";
 
+function isValidJson(str: string) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const errorMiddleware = (
   err: any,
   req: Request,
@@ -13,12 +22,18 @@ export const errorMiddleware = (
 
   if (err instanceof ApiError) {
     return res.status(err.status).json({
-      error: err.message,
+      error:
+        typeof err.message === "string" && isValidJson(err.message)
+          ? JSON.parse(err.message)
+          : err.message,
     });
   }
 
   console.error(err.message);
   return res.status(500).json({
-    error: "Internal Server Error",
+    error:
+      typeof err.message === "string" && isValidJson(err.message)
+        ? JSON.parse(err.message)
+        : "Внутрішня помилка",
   });
 };

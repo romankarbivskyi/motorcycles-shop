@@ -1,6 +1,6 @@
 import { sequelize } from "../config/database";
 import { QueryTypes } from "sequelize";
-import { Review } from "../types/models.types";
+import { Review, User } from "../types/models.types";
 import { ApiError } from "../utils/ApiError";
 
 export class ReviewService {
@@ -14,10 +14,10 @@ export class ReviewService {
     productId?: number;
     offset?: number;
     limit?: number;
-  }): Promise<Review[]> {
+  }): Promise<Review[] & Pick<User, "firstName" | "lastName">> {
     const reviews = await sequelize.query(
       `
-    SELECT * FROM reviews
+    SELECT r.*, u."firstName", u."lastName" FROM reviews r JOIN users u ON r."userId" = u.id
     ${reviewId ? "WHERE id = :reviewId" : ""}
     ${productId ? 'WHERE "productId" = :productId' : ""}
     ${limit ? "LIMIT :limit" : ""}
@@ -29,7 +29,7 @@ export class ReviewService {
       },
     );
 
-    return reviews as Review[];
+    return reviews as Review[] & Pick<User, "firstName" | "lastName">;
   }
 
   static async getReviewCount(productId?: number, userId?: number) {
@@ -61,8 +61,8 @@ export class ReviewService {
     try {
       const [newReviews] = await sequelize.query(
         `
-    INSERT INTO reviews ("userId", "productId", rating, comment)
-    VALUES(:userId, :productId, :rating, :comment) RETURNING *
+    INSERT INTO reviews ("userId", "productId", rating, comment, "createAt")
+    VALUES(:userId, :productId, :rating, :comment, :createAt) RETURNING *
     `,
         {
           replacements: {
@@ -70,6 +70,7 @@ export class ReviewService {
             productId,
             rating,
             comment,
+            createAt: new Date(Date.now()).toUTCString(),
           },
           type: QueryTypes.INSERT,
           transaction,
@@ -81,7 +82,7 @@ export class ReviewService {
         !Array.isArray(newReviews) ||
         typeof newReviews[0] !== "object"
       ) {
-        throw new Error("Review creation failed.");
+        throw new Error("Не вдалося створити відгук.");
       }
 
       await transaction.commit();
@@ -93,11 +94,12 @@ export class ReviewService {
   }
 
   static async updateReview(
-    { id, rating, comment }: Pick<Review, "id" | "rating" | "comment">,
+    reviewId: number,
+    { rating, comment }: Pick<Review, "rating" | "comment">,
     userId: number,
   ): Promise<Review> {
-    const reviews = await this.getReviews({ reviewId: id });
-    if (!reviews.length) throw ApiError.NotFound("Reviews not found");
+    const reviews = await this.getReviews({ reviewId: reviewId });
+    if (!reviews.length) throw ApiError.NotFound("Відгуків не знайдено");
 
     const existReview = reviews?.[0] as Review;
     if (existReview.userId != userId) throw ApiError.Forbidden();
@@ -106,14 +108,14 @@ export class ReviewService {
     try {
       const [updateReviews] = await sequelize.query(
         `
-    UPDATE reviews SET rating = :rating, comment = :comment, "updateAt" = :updateAt WHERE id = :id RETURNING *
+    UPDATE reviews SET rating = :rating, comment = :comment, "updateAt" = :updateAt WHERE id = :reviewId RETURNING *
     `,
         {
           replacements: {
             rating,
             comment,
-            updateAt: Date.now(),
-            id,
+            updateAt: new Date(Date.now()).toUTCString(),
+            reviewId,
           },
           type: QueryTypes.UPDATE,
           transaction,
@@ -125,7 +127,7 @@ export class ReviewService {
         !Array.isArray(updateReviews) ||
         typeof updateReviews[0] !== "object"
       ) {
-        throw new Error("Review update failed.");
+        throw new Error("Не вдалося оновити відгук.");
       }
 
       await transaction.commit();
@@ -138,7 +140,7 @@ export class ReviewService {
 
   static async deleteReview(id: number, userId: number) {
     const reviews = await this.getReviews({ reviewId: id });
-    if (!reviews.length) throw ApiError.NotFound("Reviews not found");
+    if (!reviews.length) throw ApiError.NotFound("Відгуків не знайдено");
 
     const existReview = reviews?.[0] as Review;
     if (existReview.userId != userId) throw ApiError.Forbidden();

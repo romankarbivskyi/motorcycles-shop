@@ -1,16 +1,21 @@
 import { Router } from "express";
 import { CategoryController } from "../controllers/category.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { checkSchema, query } from "express-validator";
+import { checkSchema, param, query } from "express-validator";
 import { validateMiddleware } from "../middlewares/validate.middleware";
 
 const router = Router();
 
 router.get("/", CategoryController.getCategories);
-router.get("/:categoryId", CategoryController.getCategories);
 router.get("/count", CategoryController.getCategoryCount);
+router.get(
+  "/:categoryId",
+  [param("categoryId").notEmpty(), param("categoryId").isInt()],
+  validateMiddleware,
+  CategoryController.getCategories,
+);
 router.post(
-  "/create",
+  "/",
   checkSchema({
     name: {
       trim: true,
@@ -22,9 +27,8 @@ router.post(
   CategoryController.createCategory,
 );
 router.put(
-  "/update",
+  "/:categoryId",
   checkSchema({
-    id: { notEmpty: true, isInt: true },
     name: {
       trim: true,
       notEmpty: true,
@@ -35,7 +39,7 @@ router.put(
   CategoryController.updateCategory,
 );
 router.delete(
-  "/delete/:categoryId",
+  "/:categoryId",
   authMiddleware(true),
   CategoryController.deleteCategory,
 );

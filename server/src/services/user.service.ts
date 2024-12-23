@@ -39,13 +39,19 @@ export class UserService {
     password,
   }: Omit<User, "id">) {
     const existUser = (
-      await sequelize.query("SELECT * FROM users WHERE email = :email", {
-        replacements: { email },
-        type: QueryTypes.SELECT,
-      })
+      await sequelize.query(
+        "SELECT * FROM users WHERE email = :email OR phone = :phone",
+        {
+          replacements: { email, phone },
+          type: QueryTypes.SELECT,
+        },
+      )
     )[0] as User;
 
-    if (existUser) throw ApiError.BadRequest("User already exists");
+    if (existUser)
+      throw ApiError.BadRequest(
+        "User with same email or phone number already exists",
+      );
 
     const hashPassword = await bcrypt.hash(password, 12);
 
@@ -74,7 +80,7 @@ export class UserService {
 
       const newUser = newUsers[0] as User;
 
-      const accessToken = TokenService.generateAccessToken({
+      const token = TokenService.generateAccessToken({
         id: newUser.id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
@@ -93,7 +99,7 @@ export class UserService {
           email: newUser.email,
           role: newUser.role,
         },
-        accessToken: accessToken,
+        token,
       };
     } catch (err) {
       await transaction.rollback();
@@ -118,7 +124,7 @@ export class UserService {
 
     if (!isValid) throw ApiError.Unauthorized();
 
-    const accessToken = TokenService.generateAccessToken({
+    const token = TokenService.generateAccessToken({
       id: existUser.id,
       firstName: existUser.firstName,
       lastName: existUser.lastName,
@@ -136,7 +142,7 @@ export class UserService {
         email: existUser.email,
         role: existUser.role,
       },
-      accessToken: accessToken,
+      token,
     };
   }
 
@@ -146,5 +152,85 @@ export class UserService {
     })) as any;
 
     return parseInt(res.count);
+  }
+
+  static async updateUser(userId: number, data: Partial<Omit<User, "id">>) {
+    const { firstName, lastName, phone, email, password } = data;
+
+    const existUser = (await this.getUsers({ userId }))[0];
+    if (!existUser) throw ApiError.NotFound("User not found");
+
+    const existUserEmailPhone = (
+      await sequelize.query(
+        "SELECT * FROM users WHERE id != :userId AND (phone = :phone OR email = :email)",
+        {
+          replacements: { phone, email, userId },
+          type: QueryTypes.SELECT,
+        },
+      )
+    )[0] as User;
+
+    if (existUserEmailPhone) {
+      throw ApiError.BadRequest(
+        "User with the same phone number or email already exists",
+      );
+    }
+
+    const hashPassword = password ? await bcrypt.hash(password, 12) : undefined;
+
+    const updates: string[] = [];
+    const replacements: Record<string, any> = { userId };
+
+    if (firstName) {
+      updates.push('"firstName" = :firstName');
+      replacements.firstName = firstName;
+    }
+    if (lastName) {
+      updates.push('"lastName" = :lastName');
+      replacements.lastName = lastName;
+    }
+    if (phone) {
+      updates.push("phone = :phone");
+      replacements.phone = phone;
+    }
+    if (email) {
+      updates.push("email = :email");
+      replacements.email = email;
+    }
+    if (hashPassword) {
+      updates.push("password = :password");
+      replacements.password = hashPassword;
+    }
+
+    const query = `
+    UPDATE users 
+    SET ${updates.join(", ")} 
+    WHERE id = :userId 
+    RETURNING id, "firstName", "lastName", phone, email
+  `;
+
+    const transaction = await sequelize.transaction();
+    try {
+      const [updateUsers] = (await sequelize.query(query, {
+        type: QueryTypes.UPDATE,
+        replacements,
+      })) as any;
+
+      if (
+        !updateUsers ||
+        !Array.isArray(updateUsers) ||
+        typeof updateUsers[0] !== "object"
+      ) {
+        throw new Error("User update failed.");
+      }
+
+      await transaction.commit();
+      const updateUser = updateUsers[0] as Omit<User, "password">;
+      const token = TokenService.generateAccessToken(updateUser);
+      return { user: updateUser, token };
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 }

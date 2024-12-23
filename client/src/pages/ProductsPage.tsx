@@ -1,56 +1,66 @@
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import ProductList from "../components/ProductList.tsx";
-import { useProducts } from "../hooks/useProducts.ts";
 import Pagination from "../components/Pagination.tsx";
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useProducts } from "../hooks/useProducts.ts";
+import Search from "../components/Search.tsx";
+import { ITEMS_PER_PAGE } from "../global/constants.ts";
 
 export default function ProductsPage() {
-  const { categoryId } = useParams<{ categoryId: string }>();
-  const { searchString } = useParams<{ searchString: string }>();
-  console.log("category:", categoryId);
+  const { categoryId } = useParams<{
+    categoryId: string;
+  }>();
 
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 20;
-
-  const { products, productCount, isLoading, error, fetchProducts } =
-    useProducts();
-
-  const loadProducts = useCallback(() => {
-    const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : undefined;
-    fetchProducts({
-      currentPage,
-      itemsPerPage,
-      categoryId: parsedCategoryId,
-      search: searchString,
-    });
-  }, [searchString, currentPage, itemsPerPage, categoryId, fetchProducts]);
-
-  useEffect(() => {
-    loadProducts();
-    console.log("loading products");
-  }, [searchString, categoryId, currentPage, itemsPerPage, fetchProducts]);
-
-  const onPageChange = useCallback(
-    (page: number) => {
-      setCurrentPage(page);
-    },
-    [setCurrentPage],
+  const memoizedCategoryId = useMemo(
+    () => parseInt(categoryId as string),
+    [categoryId],
   );
 
-  console.log("count", productCount);
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error!!!</div>;
-  if (productCount === 0) return <div>No products found</div>;
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const { isLoading, isError, data, refetch } = useProducts({
+    params: {
+      offset: (currentPage - 1) * ITEMS_PER_PAGE,
+      limit: ITEMS_PER_PAGE,
+      search,
+    },
+    categoryId: memoizedCategoryId,
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [currentPage, refetch]);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  if (isError) return <div>Error!!!</div>;
 
   return (
-    <div>
-      <ProductList data={products} />
-      <Pagination
-        currentPage={currentPage}
-        maxItems={productCount}
-        itemsPerPage={itemsPerPage}
-        onPageChange={onPageChange}
+    <div className="p-10">
+      <Search
+        onSearch={(search) => {
+          setSearch(search);
+          setCurrentPage(1);
+        }}
       />
+
+      {isLoading ? <div>Loading...</div> : null}
+      {data?.products.length ? (
+        <>
+          <ProductList data={data.products} />
+          <Pagination
+            currentPage={currentPage}
+            maxItems={data.count}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={handlePageChange}
+          />
+        </>
+      ) : (
+        <div className="m-10 text-center">Товарів не знайдено</div>
+      )}
     </div>
   );
 }

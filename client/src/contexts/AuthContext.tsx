@@ -1,4 +1,4 @@
-import { User } from "../types/global.ts";
+import { User } from "../global/types.ts";
 import {
   createContext,
   ReactNode,
@@ -6,12 +6,18 @@ import {
   useEffect,
   useState,
 } from "react";
+import { API } from "../utils/api.ts";
+import { RegisterFormInput } from "../components/RegisterForm.tsx";
+import { LoginFormInput } from "../components/LoginForm.tsx";
 
 interface AuthContextType {
   user: Omit<User, "password"> | null;
-  accessToken: string | null;
+  token: string | null;
   logout: () => void;
-  login: (userData: Omit<User, "password">, token: string) => void;
+  saveAuthData: (user: Omit<User, "password">, token: string) => void;
+  registerUser: (userData: RegisterFormInput) => Promise<void>;
+  loginUser: (userData: LoginFormInput) => Promise<void>;
+  isLoading: boolean;
 }
 
 interface AuthProviderProps {
@@ -30,39 +36,87 @@ export const useAuthContext = (): AuthContextType => {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<Omit<User, "password"> | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("user")) as Omit<
-      User,
-      "password"
-    >;
-    const token = localStorage.getItem("accessToken");
+  const EXPIRATION_TIME = 3600000;
 
-    if (currentUser) setUser(currentUser);
-    if (token) setAccessToken(token);
+  useEffect(() => {
+    // Retrieve the saved authentication data
+    const storedData = JSON.parse(localStorage.getItem("authData") || "{}");
+    const { user, token, expiresAt } = storedData;
+
+    // Check if the token is still valid and set user/token in state
+    if (user && token && expiresAt > Date.now()) {
+      setUser(user);
+      setToken(token);
+    } else {
+      // If no valid data, clear user and token
+      setUser(null);
+      setToken(null);
+    }
 
     setIsLoading(false);
   }, []);
 
-  const login = (userData: Omit<User, "password">, token: string) => {
-    setUser(userData);
-    setAccessToken(token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("accessToken", token);
+  const saveAuthData = (user: Omit<User, "password">, token: string) => {
+    const expiresAt = Date.now() + EXPIRATION_TIME;
+    const authData = { user, token, expiresAt };
+
+    // Store the auth data as an object in localStorage, not as an array
+    localStorage.setItem("authData", JSON.stringify(authData));
+
+    setUser(user);
+    setToken(token);
+  };
+
+  const registerUser = async (userData: RegisterFormInput) => {
+    try {
+      const { data } = await API.post<{
+        user: Omit<User, "password">;
+        token: string;
+      }>("/auth/register", userData, {
+        headers: { "Content-Type": "application/json" },
+      } as any);
+
+      saveAuthData(data.user, data.token);
+    } catch (error) {
+      console.error("Registration error", error);
+    }
+  };
+
+  const loginUser = async (userData: LoginFormInput) => {
+    try {
+      const { data } = await API.post<{
+        user: Omit<User, "password">;
+        token: string;
+      }>("/auth/login", userData, {
+        headers: { "Content-Type": "application/json" },
+      } as any);
+
+      saveAuthData(data.user, data.token);
+    } catch (error) {
+      console.error("Login error", error);
+    }
   };
 
   const logout = () => {
     setUser(null);
-    setAccessToken(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("accessToken");
+    setToken(null);
+    localStorage.removeItem("authData");
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, accessToken, isLoading, login, logout }}
+      value={{
+        user,
+        token,
+        isLoading,
+        saveAuthData,
+        logout,
+        registerUser,
+        loginUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

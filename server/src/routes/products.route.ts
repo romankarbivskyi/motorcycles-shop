@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ProductController } from "../controllers/product.controller";
 import { upload } from "../utils/storage";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { checkSchema, param } from "express-validator";
+import { checkSchema } from "express-validator";
 import { validateMiddleware } from "../middlewares/validate.middleware";
 
 const router = Router();
@@ -12,9 +12,8 @@ router.get("/count", ProductController.getProductCount);
 router.get("/count/category/:categoryId", ProductController.getProductCount);
 router.get("/:productId", ProductController.getProducts);
 router.get("/category/:categoryId", ProductController.getProducts);
-router.get("/search/:searchString", ProductController.getProducts);
 router.post(
-  "/create",
+  "/",
   upload.array("images", 10),
   checkSchema({
     make: {
@@ -117,18 +116,9 @@ router.post(
   ProductController.createProduct,
 );
 router.put(
-  "/update",
+  "/:productId",
   upload.array("images", 10),
   checkSchema({
-    id: {
-      in: ["body"],
-      isInt: {
-        errorMessage: "Id must be an integer",
-      },
-      notEmpty: {
-        errorMessage: "Id is required",
-      },
-    },
     make: {
       in: ["body"],
       isString: {
@@ -212,13 +202,51 @@ router.put(
         },
       },
     },
+    deleteImages: {
+      optional: true,
+      isArray: {
+        errorMessage: "deleteImages must be an array",
+      },
+      custom: {
+        options: (value) => {
+          if (Array.isArray(value)) {
+            for (const img of value) {
+              if (typeof img !== "string") {
+                throw new Error("Each image in deleteImages must be a string");
+              }
+            }
+          }
+          return true;
+        },
+      },
+    },
+    deleteAttributes: {
+      optional: true,
+      isArray: {
+        errorMessage: "deleteAttributes must be an array",
+      },
+      custom: {
+        options: (value) => {
+          if (Array.isArray(value)) {
+            for (const name of value) {
+              if (typeof name !== "string") {
+                throw new Error(
+                  "Each name in deleteAttributes must be a string",
+                );
+              }
+            }
+          }
+          return true;
+        },
+      },
+    },
   }) as any,
   validateMiddleware,
   authMiddleware(true),
   ProductController.updateProduct,
 );
 router.delete(
-  "/delete/:productId",
+  "/:productId",
   authMiddleware(true),
   ProductController.deleteProduct,
 );

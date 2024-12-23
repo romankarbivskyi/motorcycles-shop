@@ -28,7 +28,7 @@ router.get(
   ReviewController.getReviews,
 );
 router.post(
-  "/create",
+  "/",
   checkSchema({
     userId: { notEmpty: true, isInt: true },
     productId: { notEmpty: true, isInt: true },
@@ -47,7 +47,7 @@ router.post(
   ReviewController.createReview,
 );
 router.put(
-  "/update",
+  "/:reviewId",
   checkSchema({
     id: { isInt: true },
     rating: {
@@ -65,7 +65,7 @@ router.put(
   ReviewController.updateReview,
 );
 router.delete(
-  "/delete/:reviewId",
+  "/:reviewId",
   [param("reviewId").notEmpty(), param("reviewId").isInt()],
   validateMiddleware,
   authMiddleware(),

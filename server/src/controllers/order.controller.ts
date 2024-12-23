@@ -1,21 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import { OrderService } from "../services/order.service";
 import { ApiError } from "../utils/ApiError";
+import { UserRole } from "../types/models.types";
 
 export class OrderController {
   static async getOrders(req: Request, res: Response, next: NextFunction) {
     try {
       const orderId = parseInt(req.params.orderId);
       const userId = parseInt(req.params.userId);
+      const limit = parseInt(req.query.limit as string);
+      const offset = parseInt(req.query.offset as string);
 
-      const limit: number | undefined = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
-      const offset: number | undefined = req.query.offset
-        ? parseInt(req.query.offset as string)
-        : undefined;
-
-      if (userId && (req as any).user.id != userId) throw ApiError.Forbidden();
+      if (
+        userId &&
+        (req as any).user.role != UserRole.Admin &&
+        (req as any).user.id != userId
+      )
+        throw ApiError.Forbidden();
 
       const orders = await OrderService.getOrders({
         userId,
@@ -26,11 +27,15 @@ export class OrderController {
 
       if (orderId) {
         const order = orders[0];
-        if ((res as any).user.id != order.userId) {
+        console.log((req as any).user.role != UserRole.Admin);
+        if (
+          (req as any).user.role != UserRole.Admin &&
+          (req as any).user.id != order.userId
+        ) {
           throw ApiError.Forbidden();
         }
 
-        res.status(200).json(order);
+        res.status(200).json(orders);
         return;
       }
       res.status(200).json(orders);
@@ -41,7 +46,7 @@ export class OrderController {
 
   static async getOrderCount(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = parseInt(req.query.userId as string);
       const count = await OrderService.getOrderCount(userId);
 
       res.status(200).json(count);

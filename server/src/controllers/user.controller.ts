@@ -2,16 +2,14 @@ import { NextFunction, Request, Response } from "express";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../utils/ApiError";
 import { UserRole } from "../types/models.types";
-import { sequelize } from "../config/database";
-import { QueryTypes } from "sequelize";
 
 export class UserController {
   static async registerUser(req: Request, res: Response, next: NextFunction) {
     try {
       const data = req.body;
-      const newUser = await UserService.registerUser(data);
+      const { user, token } = await UserService.registerUser(data);
 
-      res.status(200).json(newUser);
+      res.status(200).json({ user, token });
     } catch (err) {
       next(err);
     }
@@ -20,9 +18,9 @@ export class UserController {
   static async loginUser(req: Request, res: Response, next: NextFunction) {
     try {
       const data = req.body;
-      const { user, accessToken } = await UserService.loginUser(data);
+      const { user, token } = await UserService.loginUser(data);
 
-      res.status(200).json({ user, accessToken });
+      res.status(200).json({ user, token });
     } catch (err) {
       next(err);
     }
@@ -49,11 +47,11 @@ export class UserController {
 
       const users = await UserService.getUsers({ userId, limit, offset });
 
-      if (users.length > 1) {
-        res.status(200).json(users);
+      if (userId) {
+        res.status(200).json(users[0]);
         return;
       }
-      res.status(200).json(users[0]);
+      res.status(200).json(users);
     } catch (err) {
       next(err);
     }
@@ -64,6 +62,24 @@ export class UserController {
       const count = await UserService.getUserCount();
 
       res.status(200).json(count);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async updateUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = parseInt(req.params.userId);
+      const isAdmin = (req as any).user.role == UserRole.Admin;
+      const isOwner = (req as any).user.id == userId;
+
+      if (!isAdmin && !isOwner) {
+        throw ApiError.Forbidden();
+      }
+
+      const data = req.body;
+      const { user, token } = await UserService.updateUser(userId, data);
+      res.status(200).json({ user, token });
     } catch (err) {
       next(err);
     }

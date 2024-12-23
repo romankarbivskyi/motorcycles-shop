@@ -1,16 +1,18 @@
-import { ProductWithAssets } from "../types/global.ts";
+import { ProductWithAssets } from "../global/types.ts";
 import { NavLink } from "react-router-dom";
 
-interface ProductItemState {
+interface ProductCardProps {
   data: Pick<
     ProductWithAssets,
     "id" | "make" | "model" | "year" | "price" | "stockQuantity" | "images"
   >;
+  key?: number;
 }
 
-export function ProductItem({
+export function ProductCard({
   data: { id, make, model, year, price, stockQuantity, images },
-}: ProductItemState) {
+  key,
+}: ProductCardProps) {
   const imageUrl =
     images?.length > 0
       ? `http://localhost:5000/static/${images[0].url}`
@@ -18,6 +20,7 @@ export function ProductItem({
 
   return (
     <NavLink
+      key={key}
       to={`/products/${id}`}
       className="border p-4 rounded grid grid-rows-[auto,1fr,auto] gap-4 hover:bg-gray-600/10"
     >

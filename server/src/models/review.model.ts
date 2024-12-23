@@ -35,7 +35,7 @@ export const Review = sequelize.define(
     },
     createAt: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+      allowNull: false,
     },
     updateAt: {
       type: DataTypes.DATE,

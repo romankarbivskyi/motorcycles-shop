@@ -1,16 +1,12 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.ts";
-import Search from "./Search.tsx";
 
 export default function Header() {
   const { isAdmin, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  console.log(isAuthenticated, isAdmin);
 
   return (
     <header className="border-b">
-      <div className="container flex items-center justify-between p-7">
+      <div className="container-md mx-auto flex items-center justify-between p-7">
         <div className="flex items-center gap-1">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -24,13 +20,6 @@ export default function Header() {
           <span className="text-xl font-semibold">Мотоцикли</span>
         </div>
         <nav className="flex items-center gap-10">
-          <Search
-            onSubmit={(searchString) => {
-              if (searchString)
-                return navigate("/products/search/" + searchString);
-              else return navigate("/products");
-            }}
-          />
           <ul className="flex gap-3">
             <li>
               <NavLink to="/products">
@@ -54,17 +43,32 @@ export default function Header() {
                 )}
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/orders">
-                {({ isActive }) => (
-                  <span
-                    className={`py-5 ${isActive ? "before:content-['•'] before:mr-2" : ""}`}
-                  >
-                    Замовлення
-                  </span>
-                )}
-              </NavLink>
-            </li>
+            {isAuthenticated && (
+              <li>
+                <NavLink to="/orders">
+                  {({ isActive }) => (
+                    <span
+                      className={`py-5 ${isActive ? "before:content-['•'] before:mr-2" : ""}`}
+                    >
+                      Замовлення
+                    </span>
+                  )}
+                </NavLink>
+              </li>
+            )}
+            {isAdmin && (
+              <li>
+                <NavLink to="/admin" className="text-nowrap">
+                  {({ isActive }) => (
+                    <span
+                      className={`py-5 ${isActive ? "before:content-['•'] before:mr-2" : ""}`}
+                    >
+                      Адмін панель
+                    </span>
+                  )}
+                </NavLink>
+              </li>
+            )}
           </ul>
           <ul className="flex items-center gap-2">
             <li>

@@ -541,6 +541,18 @@
   resolved "https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.28.1.tgz"
   integrity sha512-ZvK2jBafvttJjoIdKm/Q/Bh7IJ1Ose9IBOwpOXcOvW3ikGTQGmKDgxTC6oCAzW6PynbkKP8+um1du81XJHZ0JA==
 
+"@tanstack/query-core@5.62.8":
+  version "5.62.8"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.62.8.tgz#4a7df096ca6014a11b1185c1a14923659d17608c"
+  integrity sha512-4fV31vDsUyvNGrKIOUNPrZztoyL187bThnoQOvAXEVlZbSiuPONpfx53634MKKdvsDir5NyOGm80ShFaoHS/mw==
+
+"@tanstack/react-query@^5.62.8":
+  version "5.62.8"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.62.8.tgz#b2fefe0ca0502510a1550635f0be52bc3bbea7ce"
+  integrity sha512-8TUstKxF/fysHonZsWg/hnlDVgasTdHx6Q+f1/s/oPKJBJbKUWPZEHwLTMOZgrZuroLMiqYKJ9w69Abm8mWP0Q==
+  dependencies:
+    "@tanstack/query-core" "5.62.8"
+
 "@types/babel__core@^7.20.5":
   version "7.20.5"
   resolved "https://registry.npmjs.org/@types/babel__core/-/babel__core-7.20.5.tgz"
@@ -1709,6 +1721,11 @@ react-dom@^18.3.1:
   dependencies:
     loose-envify "^1.1.0"
     scheduler "^0.23.2"
+
+react-hook-form@^7.54.2:
+  version "7.54.2"
+  resolved "https://registry.yarnpkg.com/react-hook-form/-/react-hook-form-7.54.2.tgz#8c26ed54c71628dff57ccd3c074b1dd377cfb211"
+  integrity sha512-eHpAUgUjWbZocoQYUHposymRb4ZP6d0uwUnooL2uOybA9/3tPUvoAKqEWK1WaSiTxxOfTpffNZP7QwlnM3/gEg==
 
 react-refresh@^0.14.2:
   version "0.14.2"

@@ -1,6 +1,8 @@
+import { Attribute, Image } from "./models.types";
+
 export interface UpdateProductArgs {
+  productId: number;
   product: {
-    id: number;
     make?: string;
     model?: string;
     year?: number;
@@ -24,7 +26,7 @@ export interface CreateProductArgs {
     description: string;
     stockQuantity: number;
     categoryId: number;
-    attributes?: string[];
+    attributes?: any[];
   };
   images: string[];
 }
@@ -35,4 +37,24 @@ export interface GetProductArgs {
   categoryId?: number;
   offset?: number;
   limit?: number;
+  sortByPrice?: "cheap" | "expensive";
+  priceMin?: number;
+  priceMax?: number;
+  yearMin?: number;
+  yearMax?: number;
+}
+
+export interface ProductWithAssets {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: number | string;
+  description: string;
+  stockQuantity: number;
+  createAt?: Date;
+  categoryId: number;
+  categoryName: string;
+  attributes: Attribute[];
+  images: Image[];
 }

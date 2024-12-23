@@ -1,11 +1,21 @@
 import { useAuthContext } from "../contexts/AuthContext.tsx";
-import { UserRole } from "../types/global.ts";
+import { UserRole } from "../global/types.ts";
 
 export function useAuth() {
-  const { user, accessToken, login, logout } = useAuthContext();
+  const { user, token, saveAuthData, logout, registerUser, loginUser } =
+    useAuthContext();
 
-  const isAuthenticated = !!user && !!accessToken;
+  const isAuthenticated = !!user && !!token;
   const isAdmin = isAuthenticated && user?.role === UserRole.Admin;
 
-  return { user, accessToken, login, logout, isAuthenticated, isAdmin };
+  return {
+    user,
+    token,
+    saveAuthData,
+    logout,
+    isAuthenticated,
+    isAdmin,
+    registerUser,
+    loginUser,
+  };
 }

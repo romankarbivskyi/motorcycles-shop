@@ -2,6 +2,7 @@ import { sequelize } from "../config/database";
 import { QueryTypes } from "sequelize";
 import { ApiError } from "../utils/ApiError";
 import { Category } from "../types/models.types";
+import { ProductService } from "./product.service";
 
 export class CategoryService {
   static async getCategories({
@@ -60,7 +61,7 @@ export class CategoryService {
         !Array.isArray(newCategories) ||
         typeof newCategories[0] !== "object"
       ) {
-        throw new Error("Category creation failed");
+        throw new Error("Помилка створення категорії");
       }
 
       await transaction.commit();
@@ -71,20 +72,23 @@ export class CategoryService {
     }
   }
 
-  static async updateCategory({ id, name, description }: Category) {
-    const existCategories = await this.getCategories({ categoryId: id });
+  static async updateCategory(
+    categoryId: number,
+    { name, description }: Category,
+  ) {
+    const existCategories = await this.getCategories({ categoryId });
 
     if (!existCategories.length) {
-      throw ApiError.NotFound("Categories not found");
+      throw ApiError.NotFound("Категорію не знайдено");
     }
 
     const transaction = await sequelize.transaction();
     try {
       const [updatedCategories] = await sequelize.query(
-        "UPDATE categories SET name = :name, description = :description WHERE id = :id RETURNING *",
+        "UPDATE categories SET name = :name, description = :description WHERE id = :categoryId RETURNING *",
         {
           replacements: {
-            id,
+            categoryId,
             name,
             description,
           },
@@ -98,7 +102,7 @@ export class CategoryService {
         !Array.isArray(updatedCategories) ||
         typeof updatedCategories[0] !== "object"
       ) {
-        throw new Error("Category update failed");
+        throw new Error("Помилка оновлення категорії");
       }
 
       await transaction.commit();
@@ -113,7 +117,14 @@ export class CategoryService {
     const existCategories = await this.getCategories({ categoryId: id });
 
     if (!existCategories.length) {
-      throw ApiError.NotFound("Categories not found");
+      throw ApiError.NotFound("Категорії не знайдено");
+    }
+
+    const products = await ProductService.getProducts({ categoryId: id });
+    if (products.length) {
+      throw ApiError.BadRequest(
+        "Цю категорію не можна видалити, оскільки вона містить товари. Будь ласка, видаліть або перепризначте товари, перш ніж видаляти категорію",
+      );
     }
 
     const transaction = await sequelize.transaction();

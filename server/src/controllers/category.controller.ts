@@ -4,14 +4,9 @@ import { CategoryService } from "../services/category.service";
 export class CategoryController {
   static async getCategories(req: Request, res: Response, next: NextFunction) {
     try {
-      const categoryId = parseInt(req.params.categoryId);
-
-      const limit: number | undefined = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
-      const offset: number | undefined = req.query.offset
-        ? parseInt(req.query.offset as string)
-        : undefined;
+      const categoryId = parseInt(req.params.categoryId as string);
+      const limit = parseInt(req.query.limit as string);
+      const offset = parseInt(req.query.offset as string);
 
       const categories = await CategoryService.getCategories({
         categoryId,
@@ -59,7 +54,11 @@ export class CategoryController {
   static async updateCategory(req: Request, res: Response, next: NextFunction) {
     try {
       const data = req.body;
-      const updatedCategory = await CategoryService.updateCategory(data);
+      const categoryId = parseInt(req.params.categoryId);
+      const updatedCategory = await CategoryService.updateCategory(
+        categoryId,
+        data,
+      );
 
       res.status(200).json(updatedCategory);
     } catch (err) {

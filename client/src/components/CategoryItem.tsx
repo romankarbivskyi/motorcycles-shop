@@ -1,4 +1,4 @@
-import { Category } from "../types/global.ts";
+import { Category } from "../global/types.ts";
 import { NavLink } from "react-router-dom";
 
 interface CategoryItemProps {

@@ -26,6 +26,18 @@ export const OrderItem = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    make: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    model: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    year: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     orderId: {
       type: DataTypes.INTEGER,
       references: {

@@ -1,45 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
-import { Category } from "../types/global.ts";
-import { API } from "../utils/api.ts";
+import { useQuery } from "@tanstack/react-query";
+import {
+  fetchCategories,
+  FetchCategoriesParams,
+  fetchCategory,
+} from "../api/categories.ts";
 
-export function useCategories() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [category, setCategory] = useState<Category | null>(null);
+interface UseCategoriesProps {
+  params?: FetchCategoriesParams;
+}
 
-  const fetchCategories = useCallback(async () => {
-    setIsLoading(true);
+export function useCategories({ params }: UseCategoriesProps) {
+  return useQuery({
+    queryKey: ["categories", params],
+    queryFn: async () => await fetchCategories(params),
+  });
+}
 
-    try {
-      const categoryRes = await API.get(`/categories/`);
-      setCategories(categoryRes.data);
-    } catch (err) {
-      setError(err.message || "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const fetchCategoryById = useCallback(async (categoryId: number) => {
-    setIsLoading(true);
-
-    try {
-      const categoryRes = await API.get(`/categories/${categoryId}`);
-      setCategory(categoryRes.data);
-    } catch (err) {
-      setError(err.message || "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return {
-    isLoading,
-    error,
-    categories,
-    fetchCategories,
-    fetchCategoryById,
-    category,
-  };
+export function useCategory(categoryId: number) {
+  return useQuery({
+    queryKey: ["category", categoryId],
+    queryFn: async () => await fetchCategory(categoryId),
+  });
 }
