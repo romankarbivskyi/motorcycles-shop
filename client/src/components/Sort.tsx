@@ -20,7 +20,7 @@ export default function SortSelect({
 
   return (
     <div className="sort-component">
-      <h2 className="text-black font-medium mb-2">{title}</h2>
+      <label className="text-black font-medium mb-2">{title}</label>
       <select
         value={selectedOption}
         onChange={handleChange}

@@ -4,6 +4,7 @@ import {
   Category,
   FetchPaginationParams,
   Order,
+  OrderStatus,
   OrderWithItems,
 } from "../global/types.ts";
 import { handleFetch, HandleFetchResponse } from "../utils/handleFetch.ts";
@@ -45,4 +46,24 @@ export const fetchOrders = async (
     orders: OrderWithItems[];
     count: number;
   };
+};
+
+export const changeOrderStatus = async (
+  orderId: string,
+  newStatus: OrderStatus,
+): Promise<HandleFetchResponse<Order>> => {
+  return handleFetch<Order>({
+    fetch: async () =>
+      await API.post<Order>(`/orders/${orderId}/status`, {
+        status: newStatus,
+      }),
+  });
+};
+
+export const deleteOrder = async (
+  orderId: number,
+): Promise<HandleFetchResponse<any>> => {
+  return handleFetch({
+    fetch: async () => await API.delete(`/orders/${orderId}`),
+  });
 };

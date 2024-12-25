@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ReviewService } from "../services/review.service";
 import { ApiError } from "../utils/ApiError";
+import { UserRole } from "../types/models.types";
 
 export class ReviewController {
   static async getReviews(req: Request, res: Response, next: NextFunction) {
@@ -72,12 +73,14 @@ export class ReviewController {
 
   static async deleteReview(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = (req as any).user;
       const reviewId = parseInt(req.params.reviewId);
-      const userId = (req as any).user.id;
+      const userId = user.role == UserRole.Admin ? undefined : user.id;
+
       await ReviewService.deleteReview(reviewId, userId);
 
       res.status(200).json({
-        message: "Review deleted successfully",
+        message: "Відгук видалено успішно",
       });
     } catch (err) {
       next(err);

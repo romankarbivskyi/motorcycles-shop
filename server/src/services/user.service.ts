@@ -50,7 +50,7 @@ export class UserService {
 
     if (existUser)
       throw ApiError.BadRequest(
-        "User with same email or phone number already exists",
+        "Користувач з таким email або номером телефону вже існує",
       );
 
     const hashPassword = await bcrypt.hash(password, 12);
@@ -75,7 +75,7 @@ export class UserService {
         !Array.isArray(newUsers) ||
         typeof newUsers[0] !== "object"
       ) {
-        throw new Error("User register failed.");
+        throw ApiError.Unauthorized("Реєстрація користувача не вдалася.");
       }
 
       const newUser = newUsers[0] as User;
@@ -118,11 +118,13 @@ export class UserService {
       })
     )[0] as User;
 
-    if (!existUser) throw ApiError.NotFound("User not found");
+    console.log(existUser);
+
+    if (!existUser) throw ApiError.NotFound("Користувача не знайдено");
 
     const isValid = await bcrypt.compare(password, existUser.password!);
 
-    if (!isValid) throw ApiError.Unauthorized();
+    if (!isValid) throw ApiError.Unauthorized("Невірний пароль");
 
     const token = TokenService.generateAccessToken({
       id: existUser.id,
@@ -158,7 +160,7 @@ export class UserService {
     const { firstName, lastName, phone, email, password } = data;
 
     const existUser = (await this.getUsers({ userId }))[0];
-    if (!existUser) throw ApiError.NotFound("User not found");
+    if (!existUser) throw ApiError.NotFound("Користувача не знайдено");
 
     const existUserEmailPhone = (
       await sequelize.query(
@@ -172,7 +174,7 @@ export class UserService {
 
     if (existUserEmailPhone) {
       throw ApiError.BadRequest(
-        "User with the same phone number or email already exists",
+        "Користувач з таким номером телефону або email вже існує",
       );
     }
 
@@ -221,13 +223,44 @@ export class UserService {
         !Array.isArray(updateUsers) ||
         typeof updateUsers[0] !== "object"
       ) {
-        throw new Error("User update failed.");
+        throw new Error("Оновлення користувача не вдалося.");
       }
 
       await transaction.commit();
       const updateUser = updateUsers[0] as Omit<User, "password">;
       const token = TokenService.generateAccessToken(updateUser);
       return { user: updateUser, token };
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  }
+
+  static async deleteUser(userId: number) {
+    const existUser = await UserService.getUsers({ userId });
+    if (!existUser.length) throw ApiError.NotFound("Користувача не знайдено");
+
+    const transaction = await sequelize.transaction();
+    try {
+      await sequelize.query('DELETE FROM reviews WHERE "userId" = :userId', {
+        replacements: { userId },
+        type: QueryTypes.DELETE,
+        transaction,
+      });
+
+      await sequelize.query('DELETE FROM orders WHERE "userId" = :userId', {
+        replacements: { userId },
+        type: QueryTypes.DELETE,
+        transaction,
+      });
+
+      await sequelize.query("DELETE FROM users WHERE id = :userId", {
+        replacements: { userId },
+        type: QueryTypes.DELETE,
+        transaction,
+      });
+
+      await transaction.commit();
     } catch (err) {
       await transaction.rollback();
       throw err;

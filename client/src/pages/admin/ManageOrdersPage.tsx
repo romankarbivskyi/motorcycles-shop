@@ -1,13 +1,17 @@
-import { useCallback, useState } from "react";
-import { useProducts } from "../../hooks/useProducts.ts";
+import { ReactNode, useCallback, useState } from "react";
 import { ITEMS_PER_PAGE } from "../../global/constants.ts";
 import DataTable from "../../components/DataTable.tsx";
 import Pagination from "../../components/Pagination.tsx";
 import { useOrders } from "../../hooks/useOrders.ts";
 import { OrderStatus } from "../../global/types.ts";
+import { changeOrderStatus, deleteOrder } from "../../api/orders.ts";
+import Modal from "../../components/Modal.tsx";
+import OrderItem from "../../components/OrderItem.tsx";
 
 export default function ManageOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<ReactNode>("");
 
   const { isLoading, isError, data, refetch } = useOrders({
     params: {
@@ -24,13 +28,21 @@ export default function ManageOrdersPage() {
     { name: "ID", key: "id" },
     { name: "User Id", key: "userId" },
     { name: "Загальна ціна", key: "totalPrice" },
-    { name: "Status", key: "status" },
     {
       name: "Details",
       key: "details",
       render: (row: any) => (
         <button
-          onClick={async () => {}}
+          onClick={async () => {
+            setModalContent(
+              <div>
+                <OrderItem
+                  data={data?.orders?.find((attr) => attr.id === row.id)}
+                />
+              </div>,
+            );
+            setModalOpen(true);
+          }}
           className="text-white bg-black p-2 rounded"
         >
           Деталі
@@ -42,7 +54,11 @@ export default function ManageOrdersPage() {
       key: "delete",
       render: (row: any) => (
         <button
-          onClick={async () => {}}
+          onClick={async () => {
+            const { error } = await deleteOrder(parseInt(row.id));
+            if (error) alert(error);
+            await refetch();
+          }}
           className="text-white bg-red-500 p-2 rounded"
         >
           Видалити
@@ -54,7 +70,14 @@ export default function ManageOrdersPage() {
       key: "update",
       render: (row: any) => (
         <select
-          onChange={() => {}}
+          onChange={async (e) => {
+            const { error } = await changeOrderStatus(
+              row.id,
+              e.target.value as OrderStatus,
+            );
+            if (error) alert(error);
+            await refetch();
+          }}
           className="border border-gray-300 rounded px-3 py-2 w-full"
         >
           {Object.values(OrderStatus).map((option) => (
@@ -82,6 +105,11 @@ export default function ManageOrdersPage() {
           />
         </>
       ) : null}
+      {isModalOpen && (
+        <Modal title={"Деталі замовлення"} onClose={() => setModalOpen(false)}>
+          {modalContent}
+        </Modal>
+      )}
     </div>
   );
 }

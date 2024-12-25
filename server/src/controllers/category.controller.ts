@@ -72,7 +72,7 @@ export class CategoryController {
       await CategoryService.deleteCategory(categoryId);
 
       res.status(200).json({
-        message: "Category deleted successfully",
+        message: "Категорію видалено успішно",
       });
     } catch (err) {
       next(err);

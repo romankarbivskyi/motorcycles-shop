@@ -10,14 +10,28 @@ router.get("/", authMiddleware(true), OrderController.getOrders);
 router.get("/count", authMiddleware(), OrderController.getOrderCount);
 router.get(
   "/user/:userId",
-  [param("userId").notEmpty(), param("userId").isInt()],
+  [
+    param("userId")
+      .notEmpty()
+      .withMessage("Ідентифікатор користувача обов'язковий"),
+    param("userId")
+      .isInt()
+      .withMessage("Ідентифікатор користувача повинен бути цілим числом"),
+  ],
   validateMiddleware,
   authMiddleware(),
   OrderController.getOrders,
 );
 router.get(
-  "/:oderId",
-  [param("orderId").notEmpty(), param("orderId").isInt()],
+  "/:orderId",
+  [
+    param("orderId")
+      .notEmpty()
+      .withMessage("Ідентифікатор замовлення обов'язковий"),
+    param("orderId")
+      .isInt()
+      .withMessage("Ідентифікатор замовлення повинен бути цілим числом"),
+  ],
   validateMiddleware,
   authMiddleware(),
   OrderController.getOrders,
@@ -27,64 +41,64 @@ router.post(
   checkSchema({
     firstName: {
       isString: {
-        errorMessage: "First name must be a string",
+        errorMessage: "Ім'я повинно бути рядком",
       },
       notEmpty: {
-        errorMessage: "First name is required",
+        errorMessage: "Ім'я обов'язкове для заповнення",
       },
     },
     lastName: {
       isString: {
-        errorMessage: "Last name must be a string",
+        errorMessage: "Прізвище повинно бути рядком",
       },
       notEmpty: {
-        errorMessage: "Last name is required",
+        errorMessage: "Прізвище обов'язкове для заповнення",
       },
     },
     phone: {
       isString: {
-        errorMessage: "Phone must be a string",
+        errorMessage: "Телефон повинен бути рядком",
       },
       matches: {
         options: [/^\+?[0-9]{10,15}$/],
-        errorMessage: "Phone must be a valid phone number",
+        errorMessage: "Телефон повинен бути коректним номером",
       },
       notEmpty: {
-        errorMessage: "Phone number is required",
+        errorMessage: "Номер телефону обов'язковий для заповнення",
       },
     },
     email: {
       in: ["body"],
       isEmail: {
-        errorMessage: "Invalid email address",
+        errorMessage: "Невірна електронна адреса",
       },
       notEmpty: {
-        errorMessage: "Email is required",
+        errorMessage: "Електронна адреса обов'язкова для заповнення",
       },
     },
     shipAddress: {
       isString: {
-        errorMessage: "Shipping address must be a string",
+        errorMessage: "Адреса доставки повинна бути рядком",
       },
       notEmpty: {
-        errorMessage: "Shipping address is required",
+        errorMessage: "Адреса доставки обов'язкова для заповнення",
       },
     },
     userId: {
       isInt: {
-        errorMessage: "User ID must be an integer",
+        errorMessage: "Ідентифікатор користувача повинен бути цілим числом",
       },
       notEmpty: {
-        errorMessage: "User ID is required",
+        errorMessage: "Ідентифікатор користувача обов'язковий для заповнення",
       },
     },
     "orderItems.*.productId": {
       custom: {
         options: (value) => {
           if (value === null || value === undefined)
-            throw new Error("Product ID is required in order items");
+            throw new Error("Ідентифікатор продукту обов'язковий у замовленні");
           if (!Number.isInteger(value))
-            throw new Error("Product ID must be an integer");
+            throw new Error("Ідентифікатор продукту повинен бути цілим числом");
           return true;
         },
       },
@@ -93,9 +107,9 @@ router.post(
       custom: {
         options: (value) => {
           if (value === null || value === undefined)
-            throw new Error("Quantity is required in order items");
+            throw new Error("Кількість обов'язкова у замовленні");
           if (!Number.isInteger(value) || value <= 0)
-            throw new Error("Quantity must be an integer greater than 0");
+            throw new Error("Кількість повинна бути цілим числом більше 0");
           return true;
         },
       },
@@ -104,6 +118,11 @@ router.post(
   validateMiddleware,
   authMiddleware(),
   OrderController.createOrder,
+);
+router.post(
+  "/:orderId/status",
+  authMiddleware(true),
+  OrderController.changeStatus,
 );
 router.delete("/:orderId", authMiddleware(), OrderController.deleteOrder);
 

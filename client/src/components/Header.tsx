@@ -32,17 +32,6 @@ export default function Header() {
                 )}
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/categories">
-                {({ isActive }) => (
-                  <span
-                    className={`py-5 ${isActive ? "before:content-['•'] before:mr-2" : ""}`}
-                  >
-                    Категорії
-                  </span>
-                )}
-              </NavLink>
-            </li>
             {isAuthenticated && (
               <li>
                 <NavLink to="/orders">

@@ -2,6 +2,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.ts";
 import { useEffect } from "react";
+import { loginUser } from "../api/users.ts";
 
 export interface LoginFormInput {
   email: string;
@@ -21,14 +22,19 @@ export default function LoginForm() {
   });
 
   const navigate = useNavigate();
-  const { user, isAuthenticated, loginUser } = useAuth();
+  const { user, isAuthenticated, saveAuthData } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) navigate("/");
   }, [user, isAuthenticated, navigate]);
 
-  const onSubmit: SubmitHandler<LoginFormInput> = (data) => {
-    loginUser(data);
+  const onSubmit: SubmitHandler<LoginFormInput> = async (data) => {
+    const res = await loginUser(data);
+    if (res.error) {
+      alert(res.error);
+      return;
+    }
+    saveAuthData(res.data.user, res.data.token);
   };
 
   return (

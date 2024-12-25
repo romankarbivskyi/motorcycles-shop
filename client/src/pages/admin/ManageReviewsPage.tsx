@@ -4,12 +4,13 @@ import DataTable from "../../components/DataTable.tsx";
 import Pagination from "../../components/Pagination.tsx";
 import { useReviews } from "../../hooks/useReviews.ts";
 import Search from "../../components/Search.tsx";
+import { deleteReview } from "../../api/reviews.ts";
 
 export default function ManageReviewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [productId, setProductId] = useState<number | undefined>(undefined);
 
-  const { isLoading, isError, data } = useReviews({
+  const { isLoading, isError, data, refetch } = useReviews({
     params: {
       offset: (currentPage - 1) * ITEMS_PER_PAGE,
       limit: ITEMS_PER_PAGE,
@@ -34,7 +35,11 @@ export default function ManageReviewsPage() {
       key: "delete",
       render: (row: any) => (
         <button
-          onClick={async () => {}}
+          onClick={async () => {
+            const { error } = await deleteReview(parseInt(row.id));
+            if (error) alert(error);
+            await refetch();
+          }}
           className="text-white bg-red-500 p-2 rounded"
         >
           Видалити

@@ -2,6 +2,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { useAuth } from "../hooks/useAuth.ts";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { registerUser } from "../api/users.ts";
 
 export interface RegisterFormInput {
   firstName: string;
@@ -27,14 +28,19 @@ export default function RegisterForm() {
   });
 
   const navigate = useNavigate();
-  const { user, isAuthenticated, registerUser } = useAuth();
+  const { user, isAuthenticated, saveAuthData } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) navigate("/");
   }, [user, isAuthenticated, navigate]);
 
-  const onSubmit: SubmitHandler<RegisterFormInput> = (data) => {
-    registerUser(data);
+  const onSubmit: SubmitHandler<RegisterFormInput> = async (data) => {
+    const res = await registerUser(data);
+    if (res.error) {
+      alert(res.error);
+      return;
+    }
+    saveAuthData(res.data.user, res.data.token);
   };
 
   return (

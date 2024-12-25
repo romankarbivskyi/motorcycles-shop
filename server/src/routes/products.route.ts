@@ -18,69 +18,70 @@ router.post(
   checkSchema({
     make: {
       isString: {
-        errorMessage: "Make must be a string",
+        errorMessage: "Марка повинна бути рядком",
       },
       notEmpty: {
-        errorMessage: "Make is required",
+        errorMessage: "Марка є обов'язковою",
       },
     },
     model: {
       isString: {
-        errorMessage: "Model must be a string",
+        errorMessage: "Модель повинна бути рядком",
       },
       notEmpty: {
-        errorMessage: "Model is required",
+        errorMessage: "Модель є обов'язковою",
       },
     },
     year: {
       isInt: {
-        errorMessage: "Year must be an integer",
+        errorMessage: "Рік повинен бути цілим числом",
       },
       notEmpty: {
-        errorMessage: "Year is required",
+        errorMessage: "Рік є обов'язковим",
       },
     },
     price: {
       isInt: {
         options: { min: 0 },
-        errorMessage: "Price must be an integer and greater than 0",
+        errorMessage: "Ціна повинна бути цілим числом і більше 0",
       },
       notEmpty: {
-        errorMessage: "Price is required",
+        errorMessage: "Ціна є обов'язковою",
       },
     },
     description: {
       isString: {
-        errorMessage: "Description must be a string",
+        errorMessage: "Опис повинен бути рядком",
       },
       notEmpty: {
-        errorMessage: "Description is required",
+        errorMessage: "Опис є обов'язковим",
       },
     },
     stockQuantity: {
       isInt: {
         options: { min: 0 },
-        errorMessage: "Stock quantity must be an integer and greater than 0",
+        errorMessage:
+          "Кількість на складі повинна бути цілим числом і більше 0",
       },
       notEmpty: {
-        errorMessage: "Stock quantity is required",
+        errorMessage: "Кількість на складі є обов'язковою",
       },
     },
     categoryId: {
       isInt: {
-        errorMessage: "CategoryId must be an integer",
+        errorMessage: "ID категорії повинен бути цілим числом",
       },
       notEmpty: {
-        errorMessage: "Category id is required",
+        errorMessage: "ID категорії є обов'язковим",
       },
     },
     "attributes.*.name": {
       custom: {
         options: (value) => {
           if (value === null || value === undefined)
-            throw new Error("Name is required in attributes");
+            throw new Error("Ім'я є обов'язковим в атрибутах");
           if (typeof value !== "string")
-            throw new Error("Name must be a string");
+            throw new Error("Ім'я повинно бути рядком");
           return true;
         },
       },
@@ -89,9 +90,9 @@ router.post(
       custom: {
         options: (value) => {
           if (value === null || value === undefined)
-            throw new Error("Value is required in attributes");
+            throw new Error("Значення є обов'язковим в атрибутах");
           if (typeof value !== "string")
-            throw new Error("Value must be a string");
+            throw new Error("Значення повинно бути рядком");
           return true;
         },
       },
@@ -102,7 +103,7 @@ router.post(
           if (req.files && req.files.length > 0) {
             for (const file of req.files) {
               if (!file.mimetype.startsWith("image/")) {
-                throw new Error("Each file must be an image");
+                throw new Error("Кожен файл повинен бути зображенням");
               }
             }
           }
@@ -122,45 +123,46 @@ router.put(
     make: {
       in: ["body"],
       isString: {
-        errorMessage: "Make must be a string",
+        errorMessage: "Марка повинна бути рядком",
       },
     },
     model: {
       in: ["body"],
       isString: {
-        errorMessage: "Model must be a string",
+        errorMessage: "Модель повинна бути рядком",
       },
     },
     year: {
       in: ["body"],
       isInt: {
-        errorMessage: "Year must be an integer",
+        errorMessage: "Рік повинен бути цілим числом",
       },
     },
     price: {
       in: ["body"],
       isInt: {
         options: { min: 0 },
-        errorMessage: "Price must be an integer and greater than 0",
+        errorMessage: "Ціна повинна бути цілим числом і більше 0",
       },
     },
     description: {
       in: ["body"],
       isString: {
-        errorMessage: "Description must be a string",
+        errorMessage: "Опис повинен бути рядком",
       },
     },
     stockQuantity: {
       in: ["body"],
       isInt: {
         options: { min: 0 },
-        errorMessage: "Stock quantity must be an integer and greater than 0",
+        errorMessage:
+          "Кількість на складі повинна бути цілим числом і більше 0",
       },
     },
     categoryId: {
       in: ["body"],
       isInt: {
-        errorMessage: "CategoryId must be an integer",
+        errorMessage: "ID категорії повинен бути цілим числом",
       },
     },
     "attributes.*.name": {
@@ -168,9 +170,9 @@ router.put(
       custom: {
         options: (value) => {
           if (value === null || value === undefined)
-            throw new Error("Name is required in attributes");
+            throw new Error("Ім'я є обов'язковим в атрибутах");
           if (typeof value !== "string")
-            throw new Error("Name must be a string");
+            throw new Error("Ім'я повинно бути рядком");
           return true;
         },
       },
@@ -180,9 +182,9 @@ router.put(
       custom: {
         options: (value) => {
           if (value === null || value === undefined)
-            throw new Error("Value is required in attributes");
+            throw new Error("Значення є обов'язковим в атрибутах");
           if (typeof value !== "string")
-            throw new Error("Value must be a string");
+            throw new Error("Значення повинно бути рядком");
           return true;
         },
       },
@@ -194,7 +196,7 @@ router.put(
           if (req.files && req.files.length > 0) {
             for (const file of req.files) {
               if (!file.mimetype.startsWith("image/")) {
-                throw new Error("File must be an image");
+                throw new Error("Файл повинен бути зображенням");
               }
             }
           }
@@ -205,14 +207,16 @@ router.put(
     deleteImages: {
       optional: true,
       isArray: {
-        errorMessage: "deleteImages must be an array",
+        errorMessage: "deleteImages повинно бути масивом",
       },
       custom: {
         options: (value) => {
           if (Array.isArray(value)) {
             for (const img of value) {
               if (typeof img !== "string") {
-                throw new Error("Each image in deleteImages must be a string");
+                throw new Error(
+                  "Кожне зображення в deleteImages повинно бути рядком",
+                );
               }
             }
           }
@@ -223,7 +227,7 @@ router.put(
     deleteAttributes: {
       optional: true,
       isArray: {
-        errorMessage: "deleteAttributes must be an array",
+        errorMessage: "deleteAttributes повинно бути масивом",
       },
       custom: {
         options: (value) => {
@@ -231,7 +235,7 @@ router.put(
             for (const name of value) {
               if (typeof name !== "string") {
                 throw new Error(
-                  "Each name in deleteAttributes must be a string",
+                  "Кожне ім'я в deleteAttributes повинно бути рядком",
                 );
               }
             }

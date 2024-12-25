@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { OrderService } from "../services/order.service";
 import { ApiError } from "../utils/ApiError";
-import { UserRole } from "../types/models.types";
+import { OrderStatus, UserRole } from "../types/models.types";
 
 export class OrderController {
   static async getOrders(req: Request, res: Response, next: NextFunction) {
@@ -70,14 +70,27 @@ export class OrderController {
 
   static async deleteOrder(req: Request, res: Response, next: NextFunction) {
     try {
-      const orderId: number = parseInt(req.params.orderId);
-      const userId: number = (req as any).user.id as number;
+      const orderId = parseInt(req.params.orderId);
+      const userId = (req as any).user.id as number;
 
       await OrderService.deleteOrder(orderId, userId);
 
       res.status(200).json({
-        message: "Order deleted successfully",
+        message: "Замовлення видалено успішно",
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async changeStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orderId = parseInt(req.params.orderId);
+      const data = req.body.status as OrderStatus;
+
+      const updateOrder = await OrderService.changeStatus(orderId, data);
+
+      res.status(200).json({ updateOrder });
     } catch (err) {
       next(err);
     }

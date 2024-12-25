@@ -6,8 +6,16 @@ export interface OrderItemProps {
 }
 
 export default function OrderItem({ data }: OrderItemProps) {
-  const { firstName, lastName, phone, email, shipAddress, orderItems, status } =
-    data;
+  const {
+    firstName,
+    lastName,
+    phone,
+    email,
+    shipAddress,
+    orderItems,
+    status,
+    totalPrice,
+  } = data;
 
   return (
     <div className="border rounded p-5 relative">
@@ -33,6 +41,10 @@ export default function OrderItem({ data }: OrderItemProps) {
         <li>Телефон: {phone}</li>
         <li>Email: {email}</li>
         <li>Адреса доставки: {shipAddress}</li>
+        <li>
+          Повна ціна:{" "}
+          <span className="underline font-medium">${totalPrice}</span>
+        </li>
       </ul>
 
       <h2 className="text-lg font-bold mb-2">Продукти:</h2>

@@ -1,7 +1,6 @@
 import ProductsPage from "../pages/ProductsPage.tsx";
 import ProductPage from "../pages/ProductPage.tsx";
 import { RouteProps } from "react-router-dom";
-import CategoriesPage from "../pages/CategoriesPage.tsx";
 import OrdersPage from "../pages/OrdersPage.tsx";
 import CartPage from "../pages/CartPage.tsx";
 import ProfilePage from "../pages/ProfilePage.tsx";
@@ -29,18 +28,6 @@ export default [
   {
     path: "/products/:productId",
     element: <ProductPage />,
-  },
-  {
-    path: "/products/search/:searchString",
-    element: <ProductsPage />,
-  },
-  {
-    path: "/products/category/:categoryId",
-    element: <ProductsPage />,
-  },
-  {
-    path: "/categories",
-    element: <CategoriesPage />,
   },
   {
     path: "/orders",

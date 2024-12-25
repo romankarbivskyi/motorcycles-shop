@@ -84,4 +84,17 @@ export class UserController {
       next(err);
     }
   }
+
+  static async deleteUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = parseInt(req.params.userId);
+      await UserService.deleteUser(userId);
+
+      res.status(200).json({
+        message: "Користувача видалено успішно",
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

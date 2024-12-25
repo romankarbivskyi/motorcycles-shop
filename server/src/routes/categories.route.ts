@@ -10,7 +10,12 @@ router.get("/", CategoryController.getCategories);
 router.get("/count", CategoryController.getCategoryCount);
 router.get(
   "/:categoryId",
-  [param("categoryId").notEmpty(), param("categoryId").isInt()],
+  [
+    param("categoryId").notEmpty().withMessage("ID категорії є обов'язковим"),
+    param("categoryId")
+      .isInt()
+      .withMessage("ID категорії повинен бути цілим числом"),
+  ],
   validateMiddleware,
   CategoryController.getCategories,
 );
@@ -19,7 +24,9 @@ router.post(
   checkSchema({
     name: {
       trim: true,
-      notEmpty: true,
+      notEmpty: {
+        errorMessage: "Назва категорії є обов'язковою",
+      },
     },
   }),
   validateMiddleware,
@@ -31,7 +38,9 @@ router.put(
   checkSchema({
     name: {
       trim: true,
-      notEmpty: true,
+      notEmpty: {
+        errorMessage: "Назва категорії є обов'язковою",
+      },
     },
   }),
   validateMiddleware,

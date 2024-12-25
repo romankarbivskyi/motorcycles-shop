@@ -40,7 +40,7 @@ export default function Filter({
 
   return (
     <div className="filter-component">
-      <h3>Фільтри</h3>
+      <h3 className="font-medium">Фільтри</h3>
 
       <div className="filter-item">
         <label>Ціна</label>
@@ -61,7 +61,7 @@ export default function Filter({
           type="range"
           name="max"
           min={priceRange.min}
-          max="10000"
+          max="1000000"
           value={priceRange.max}
           onChange={handlePriceChange}
           className="w-full"
@@ -77,7 +77,7 @@ export default function Filter({
         <input
           type="range"
           name="min"
-          min="2000"
+          min="1900"
           max={yearRange.max}
           value={yearRange.min}
           onChange={handleYearChange}
@@ -87,7 +87,7 @@ export default function Filter({
           type="range"
           name="max"
           min={yearRange.min}
-          max="2024"
+          max={new Date().getFullYear()}
           value={yearRange.max}
           onChange={handleYearChange}
           className="w-full"

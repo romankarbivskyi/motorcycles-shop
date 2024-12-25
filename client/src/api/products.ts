@@ -7,6 +7,10 @@ export interface FetchProductsParams {
   offset?: number;
   limit?: number;
   sortByPrice?: string;
+  priceMin?: number;
+  priceMax?: number;
+  yearMin?: number;
+  yearMax?: number;
   search?: string;
 }
 

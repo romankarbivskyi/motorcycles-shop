@@ -110,7 +110,7 @@ export class ProductController {
       await ProductService.deleteProduct(productId);
 
       res.status(200).json({
-        message: "Product deleted successfully",
+        message: "Товар видалено успішно",
       });
     } catch (err) {
       next(err);

@@ -9,54 +9,57 @@ router.post(
   "/register",
   checkSchema({
     firstName: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Ім'я не може бути порожнім" },
       trim: true,
       isLength: {
         options: { min: 2, max: 25 },
+        errorMessage: "Ім'я повинно бути від 2 до 25 символів",
       },
     },
     lastName: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Прізвище не може бути порожнім" },
       trim: true,
       isLength: {
         options: { min: 2, max: 35 },
+        errorMessage: "Прізвище повинно бути від 2 до 35 символів",
       },
     },
     phone: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Телефон не може бути порожнім" },
       trim: true,
       isLength: {
         options: { min: 8, max: 12 },
-        errorMessage: "Phone number is incorrect",
+        errorMessage: "Номер телефону введено некоректно",
       },
     },
     email: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Email не може бути порожнім" },
       trim: true,
-      isEmail: true,
+      isEmail: { errorMessage: "Невірний формат email" },
     },
     password: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Пароль не може бути порожнім" },
       trim: true,
-      errorMessage: "The password must be at least 8 characters",
+      errorMessage: "Пароль повинен містити щонайменше 8 символів",
       isLength: { options: { min: 8 } },
     },
   }),
   validateMiddleware,
   UserController.registerUser,
 );
+
 router.post(
   "/login",
   checkSchema({
     email: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Email не може бути порожнім" },
       trim: true,
-      isEmail: true,
+      isEmail: { errorMessage: "Невірний формат email" },
     },
     password: {
-      notEmpty: true,
+      notEmpty: { errorMessage: "Пароль не може бути порожнім" },
       trim: true,
-      errorMessage: "The password must be at least 8 characters",
+      errorMessage: "Пароль повинен містити щонайменше 8 символів",
       isLength: { options: { min: 8 } },
     },
   }),

@@ -1,4 +1,4 @@
-import { OrderItem } from "./models.types";
+import { Order, OrderItem } from "./models.types";
 
 export interface CreateOrder {
   firstName: string;
@@ -15,4 +15,8 @@ export interface GetOrderArgs {
   userId?: number;
   offset?: number;
   limit?: number;
+}
+
+export interface OrderWithItems extends Order {
+  orderItems: OrderItem[];
 }

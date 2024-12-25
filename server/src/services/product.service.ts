@@ -419,6 +419,15 @@ export class ProductService {
     const transaction = await sequelize.transaction();
     try {
       await sequelize.query(
+        'DELETE FROM reviews WHERE "productId" = :productId',
+        {
+          replacements: { productId },
+          type: QueryTypes.DELETE,
+          transaction,
+        },
+      );
+
+      await sequelize.query(
         'DELETE FROM images WHERE "productId" = :productId',
         {
           replacements: { productId },

@@ -28,7 +28,7 @@ export default function Pagination({
         className={`px-3 py-1 rounded ${
           currentPage === 1
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-gray-500 text-white hover:bg-gray-600"
+            : "bg-black text-white hover:bg-gray-600"
         }`}
       >
         Минула
@@ -56,7 +56,7 @@ export default function Pagination({
         className={`px-3 py-1 rounded ${
           currentPage === pageCount
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-gray-500 text-white hover:bg-gray-600"
+            : "bg-black text-white hover:bg-gray-600"
         }`}
       >
         Наступна

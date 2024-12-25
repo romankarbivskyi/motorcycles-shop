@@ -1,24 +1,93 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ITEMS_PER_PAGE } from "../../global/constants.ts";
 import DataTable from "../../components/DataTable.tsx";
 import Pagination from "../../components/Pagination.tsx";
 import { useProducts } from "../../hooks/useProducts.ts";
 import { NavLink } from "react-router-dom";
 import { deleteProduct } from "../../api/products.ts";
+import SortSelect from "../../components/Sort.tsx";
+import Filter from "../../components/Filter.tsx";
+import { useCategories } from "../../hooks/useCategories.ts";
+import Search from "../../components/Search.tsx";
 
 export default function ManageProductsPage() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isSearchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState<string>("");
+  const [sortPriceOption, setSortPriceOption] = useState<string>("expensive");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    number | undefined
+  >(undefined);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
-  const { isLoading, isError, data, refetch } = useProducts({
-    params: {
-      offset: (currentPage - 1) * ITEMS_PER_PAGE,
-      limit: ITEMS_PER_PAGE,
-    },
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000000 });
+  const [yearRange, setYearRange] = useState({
+    min: 1900,
+    max: new Date().getFullYear(),
   });
+
+  const productsParams = useMemo(
+    () => ({
+      params: {
+        offset: (currentPage - 1) * ITEMS_PER_PAGE,
+        limit: ITEMS_PER_PAGE,
+        search,
+        sortByPrice: sortPriceOption,
+        priceMin: priceRange.min,
+        priceMax: priceRange.max,
+        yearMin: yearRange.min,
+        yearMax: yearRange.max,
+        yearRange,
+      },
+      categoryId: selectedCategoryId,
+    }),
+    [
+      currentPage,
+      search,
+      sortPriceOption,
+      selectedCategoryId,
+      priceRange,
+      yearRange,
+    ],
+  );
+
+  const productsRes = useProducts(productsParams);
+  const productsData = productsRes.data;
+
+  const categoriesRes = useCategories({});
+  const categoriesData = categoriesRes.data;
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
+
+  const handleFilterChange = (filters: {
+    price: { min: number; max: number };
+    year: { min: number; max: number };
+  }) => {
+    setPriceRange(filters.price);
+    setYearRange(filters.year);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedId = e.target.value;
+      setSelectedCategoryId(
+        selectedId === "all" ? undefined : parseInt(selectedId, 10),
+      );
+    },
+    [],
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      categoriesData?.categories.map((category) => (
+        <option key={category.id} value={category.id}>
+          {category.name}
+        </option>
+      )),
+    [categoriesData],
+  );
 
   const columns = [
     { name: "ID", key: "id" },
@@ -38,7 +107,7 @@ export default function ManageProductsPage() {
               alert(`${error}`);
             } else {
               alert("Товар видалено успішно");
-              await refetch();
+              await productsRes.refetch();
             }
           }}
           className="text-white bg-red-500 p-2 rounded"
@@ -61,29 +130,74 @@ export default function ManageProductsPage() {
     },
   ];
 
-  if (isError) return <div>Error...</div>;
+  if (productsRes.isError) return <div>Error...</div>;
+  if (categoriesRes.isError) return <div>Error...</div>;
 
   return (
     <div>
-      <div className="flex mb-2">
+      <div className="flex mb-2 gap-5 items-center">
         <NavLink
           to={"/admin/products/create"}
           className="text-white bg-black rounded p-2"
         >
           Додати товар
         </NavLink>
+        <button
+          className="text-white bg-black rounded p-2"
+          onClick={() => setSearchOpen(!isSearchOpen)}
+        >
+          Розширений пошук
+        </button>
       </div>
-      {isLoading ? <div>Loading...</div> : null}
-      {data?.products.length ? (
-        <>
-          <DataTable columns={columns} data={data.products} />
+      <div className={`flex flex-col gap-5 ${!isSearchOpen && "hidden"}`}>
+        <Search
+          onSearch={(search) => {
+            setSearch(search);
+            setCurrentPage(1);
+          }}
+        />
+        <div>
+          <label htmlFor="category" className="font-medium mb-2">
+            Категорія:
+          </label>
+          <select
+            id="category"
+            onChange={handleCategoryChange}
+            value={selectedCategoryId || ""}
+            className="border border-gray-300 rounded px-3 py-2 w-full"
+          >
+            <option value="all">Усі</option>
+            {categoryOptions}
+          </select>
+        </div>
+
+        <SortSelect
+          title="За ціною"
+          options={[
+            { key: "expensive", name: "Спочатку дорогі" },
+            { key: "cheap", name: "Спочатку дешеві" },
+          ]}
+          selectedOption={sortPriceOption}
+          onChange={setSortPriceOption}
+        />
+
+        <Filter
+          priceRange={priceRange}
+          yearRange={yearRange}
+          onFilterChange={handleFilterChange}
+        />
+      </div>
+      {productsRes.isLoading ? <div>Loading...</div> : null}
+      {productsData?.products.length ? (
+        <div>
+          <DataTable columns={columns} data={productsData.products} />
           <Pagination
             currentPage={currentPage}
-            maxItems={data.count}
+            maxItems={productsData.count}
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={handlePageChange}
           />
-        </>
+        </div>
       ) : null}
     </div>
   );

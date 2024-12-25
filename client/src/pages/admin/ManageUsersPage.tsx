@@ -3,11 +3,12 @@ import { useUsers } from "../../hooks/useUsers.ts";
 import { ITEMS_PER_PAGE } from "../../global/constants.ts";
 import DataTable from "../../components/DataTable.tsx";
 import Pagination from "../../components/Pagination.tsx";
+import { deleteUser } from "../../api/users.ts";
 
 export default function ManageUsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { isLoading, isError, data } = useUsers({
+  const { isLoading, isError, data, refetch } = useUsers({
     params: {
       offset: (currentPage - 1) * ITEMS_PER_PAGE,
       limit: ITEMS_PER_PAGE,
@@ -30,7 +31,11 @@ export default function ManageUsersPage() {
       key: "delete",
       render: (row: any) => (
         <button
-          onClick={async () => {}}
+          onClick={async () => {
+            const { error } = await deleteUser(parseInt(row.id));
+            if (error) alert(error);
+            await refetch();
+          }}
           className="text-white bg-red-500 p-2 rounded"
         >
           Видалити

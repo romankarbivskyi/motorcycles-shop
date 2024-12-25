@@ -18,8 +18,8 @@ export class ReviewService {
     const reviews = await sequelize.query(
       `
     SELECT r.*, u."firstName", u."lastName" FROM reviews r JOIN users u ON r."userId" = u.id
-    ${reviewId ? "WHERE id = :reviewId" : ""}
-    ${productId ? 'WHERE "productId" = :productId' : ""}
+    ${reviewId ? "WHERE r.id = :reviewId" : ""}
+    ${productId ? 'WHERE r."productId" = :productId' : ""}
     ${limit ? "LIMIT :limit" : ""}
     ${offset ? "OFFSET :offset" : ""}
     `,
@@ -99,6 +99,7 @@ export class ReviewService {
     userId: number,
   ): Promise<Review> {
     const reviews = await this.getReviews({ reviewId: reviewId });
+    console.log(reviews);
     if (!reviews.length) throw ApiError.NotFound("Відгуків не знайдено");
 
     const existReview = reviews?.[0] as Review;
@@ -138,12 +139,14 @@ export class ReviewService {
     }
   }
 
-  static async deleteReview(id: number, userId: number) {
+  static async deleteReview(id: number, userId?: number) {
     const reviews = await this.getReviews({ reviewId: id });
     if (!reviews.length) throw ApiError.NotFound("Відгуків не знайдено");
 
-    const existReview = reviews?.[0] as Review;
-    if (existReview.userId != userId) throw ApiError.Forbidden();
+    if (userId) {
+      const existReview = reviews?.[0] as Review;
+      if (existReview.userId != userId) throw ApiError.Forbidden();
+    }
 
     const transaction = await sequelize.transaction();
     try {

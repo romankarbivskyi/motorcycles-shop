@@ -9,14 +9,13 @@ import {
 import { API } from "../utils/api.ts";
 import { RegisterFormInput } from "../components/RegisterForm.tsx";
 import { LoginFormInput } from "../components/LoginForm.tsx";
+import { handleFetch, HandleFetchResponse } from "../utils/handleFetch.ts";
 
 interface AuthContextType {
   user: Omit<User, "password"> | null;
   token: string | null;
   logout: () => void;
   saveAuthData: (user: Omit<User, "password">, token: string) => void;
-  registerUser: (userData: RegisterFormInput) => Promise<void>;
-  loginUser: (userData: LoginFormInput) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -42,16 +41,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const EXPIRATION_TIME = 3600000;
 
   useEffect(() => {
-    // Retrieve the saved authentication data
     const storedData = JSON.parse(localStorage.getItem("authData") || "{}");
     const { user, token, expiresAt } = storedData;
 
-    // Check if the token is still valid and set user/token in state
     if (user && token && expiresAt > Date.now()) {
       setUser(user);
       setToken(token);
     } else {
-      // If no valid data, clear user and token
       setUser(null);
       setToken(null);
     }
@@ -63,41 +59,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const expiresAt = Date.now() + EXPIRATION_TIME;
     const authData = { user, token, expiresAt };
 
-    // Store the auth data as an object in localStorage, not as an array
     localStorage.setItem("authData", JSON.stringify(authData));
 
     setUser(user);
     setToken(token);
-  };
-
-  const registerUser = async (userData: RegisterFormInput) => {
-    try {
-      const { data } = await API.post<{
-        user: Omit<User, "password">;
-        token: string;
-      }>("/auth/register", userData, {
-        headers: { "Content-Type": "application/json" },
-      } as any);
-
-      saveAuthData(data.user, data.token);
-    } catch (error) {
-      console.error("Registration error", error);
-    }
-  };
-
-  const loginUser = async (userData: LoginFormInput) => {
-    try {
-      const { data } = await API.post<{
-        user: Omit<User, "password">;
-        token: string;
-      }>("/auth/login", userData, {
-        headers: { "Content-Type": "application/json" },
-      } as any);
-
-      saveAuthData(data.user, data.token);
-    } catch (error) {
-      console.error("Login error", error);
-    }
   };
 
   const logout = () => {
@@ -114,8 +79,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading,
         saveAuthData,
         logout,
-        registerUser,
-        loginUser,
       }}
     >
       {children}

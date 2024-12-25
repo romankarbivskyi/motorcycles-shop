@@ -1,18 +1,14 @@
 import { useUser } from "../hooks/useUsers.ts";
 import { useAuth } from "../hooks/useAuth.ts";
 import { useNavigate } from "react-router-dom";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { RegisterFormInput } from "../components/RegisterForm.tsx";
 import { SubmitHandler, useForm } from "react-hook-form";
-import Modal from "../components/Modal.tsx";
 import { updateUser } from "../api/users.ts";
 
 export interface UserProfileInput extends RegisterFormInput {}
 
 export default function ProfilePage() {
-  const [modalTitle, setModalTitle] = useState<string>("");
-  const [isModalOpen, setModalOpen] = useState<boolean>(false);
-  const [modalContent, setModalContent] = useState<ReactNode>(null);
   const { user, isAuthenticated, logout, saveAuthData } = useAuth();
   const navigate = useNavigate();
 
@@ -53,28 +49,13 @@ export default function ProfilePage() {
   });
 
   const onSubmit: SubmitHandler<UserProfileInput> = async (formData) => {
-    try {
-      const update = await updateUser(user?.id!, formData);
-      saveAuthData(update.data.user, update.data.token);
-      console.log("Profile updated successfully");
-
-      setModalTitle("Успіх");
-      setModalContent("Профіль оновлено успішно");
-      setModalOpen(true);
-    } catch (err: any) {
-      console.error("Error updating profile", err);
-
-      setModalTitle("Помилка");
-      setModalOpen(true);
-
-      setModalContent(
-        <div>
-          <p className="text-red-500">
-            {err?.message || "Неочікувана помилка."}
-          </p>
-        </div>,
-      );
+    const { error, data } = await updateUser(user?.id!, formData);
+    if (error) {
+      alert(error);
+      return;
     }
+    alert("Профіль оновлено");
+    saveAuthData(data.user, data.token);
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -198,11 +179,6 @@ export default function ProfilePage() {
       >
         Вийти
       </button>
-      {isModalOpen && (
-        <Modal title={modalTitle} onClose={() => setModalOpen(false)}>
-          {modalContent}
-        </Modal>
-      )}
     </div>
   );
 }

@@ -1,15 +1,33 @@
 import { useProduct } from "../hooks/useProducts.ts";
 import { useParams } from "react-router-dom";
 import ProductGallery from "../components/ProductGallery.tsx";
-import { useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
+import ReviewForm from "../components/ReviewForm.tsx";
+import { useReviews } from "../hooks/useReviews.ts";
+import { ITEMS_PER_PAGE } from "../global/constants.ts";
+import Pagination from "../components/Pagination.tsx";
+import ReviewItem from "../components/ReviewItem.tsx";
+import { useAuth } from "../hooks/useAuth.ts";
+import { deleteReview } from "../api/reviews.ts";
+import Modal from "../components/Modal.tsx";
 
 export default function ProductPage() {
   const { productId } = useParams<{ productId: string }>();
   const [quantity, setQuantity] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [editReviewId, setEditReviewId] = useState<number | undefined>(
+    undefined,
+  );
 
   const { isError, isLoading, data } = useProduct(
     parseInt(productId as string),
   );
+
+  const reviewsRes = useReviews({ productId: parseInt(productId!) });
+  const reviewsData = reviewsRes.data;
+
+  const { user } = useAuth();
 
   const addToCart = async () => {
     const cart = JSON.parse(localStorage.getItem("orderItems") || "[]");
@@ -26,6 +44,21 @@ export default function ProductPage() {
 
     localStorage.setItem("orderItems", JSON.stringify(cart));
   };
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handleDeleteReview = useCallback(async (id) => {
+    const { error } = await deleteReview(id);
+    if (error) alert(error);
+    await reviewsRes.refetch();
+  }, []);
+
+  const handleEditReview = useCallback(async (id) => {
+    setEditReviewId(id);
+    setModalOpen(true);
+  }, []);
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;
@@ -103,7 +136,7 @@ export default function ProductPage() {
               htmlFor="quantity"
               className="text-black font-medium text-xl"
             >
-              Кількість:
+              Купити:
             </label>
             <div className="flex w-full gap-3">
               <input
@@ -113,7 +146,7 @@ export default function ProductPage() {
                 min={1}
                 max={data?.stockQuantity}
                 className="border rounded p-2 "
-                onInput={(e) =>
+                onInput={(e: FormEvent<HTMLInputElement>) =>
                   setQuantity(
                     parseInt(e.target.value) > data?.stockQuantity
                       ? (data?.stockQuantity as number)
@@ -125,7 +158,7 @@ export default function ProductPage() {
                 className="bg-black text-white rounded hover:opacity-75 p-2"
                 onClick={addToCart}
               >
-                Купити
+                В кошик
               </button>
             </div>
           </div>
@@ -146,6 +179,48 @@ export default function ProductPage() {
           </table>
         </div>
       </div>
+      <div className="my-4">
+        <ReviewForm
+          type={"create"}
+          productData={data}
+          cb={async () => await reviewsRes.refetch()}
+        />
+      </div>
+      {reviewsData?.reviews.length ? (
+        <div>
+          {reviewsData.reviews.map((review) => (
+            <ReviewItem
+              data={review}
+              user={user!}
+              onDelete={handleDeleteReview}
+              onEdit={handleEditReview}
+            />
+          ))}
+          <Pagination
+            currentPage={currentPage}
+            maxItems={reviewsData.count}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      ) : (
+        <div className="text-center m-5">Відгуків не знайдено</div>
+      )}
+      {isModalOpen && (
+        <Modal title={"Редагувати відгук"} onClose={() => setModalOpen(false)}>
+          <ReviewForm
+            type={"update"}
+            cb={async () => {
+              setModalOpen(false);
+              await reviewsRes.refetch();
+            }}
+            reviewData={reviewsData?.reviews!.find(
+              (attr) => attr.id === editReviewId,
+            )}
+            productData={data}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

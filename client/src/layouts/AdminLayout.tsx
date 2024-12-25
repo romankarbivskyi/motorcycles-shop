@@ -23,7 +23,11 @@ export default function AdminLayout({ children }: DashboardProps) {
           <li>
             <NavLink
               to={"/admin/products/"}
-              className="border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl"
+              className={({ isActive }) =>
+                `border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl ${
+                  isActive ? "bg-gray-600/10" : ""
+                }`
+              }
             >
               Товари
             </NavLink>
@@ -31,7 +35,11 @@ export default function AdminLayout({ children }: DashboardProps) {
           <li>
             <NavLink
               to={"/admin/categories/"}
-              className="border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl"
+              className={({ isActive }) =>
+                `border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl ${
+                  isActive ? "bg-gray-600/10" : ""
+                }`
+              }
             >
               Категорії
             </NavLink>
@@ -39,7 +47,11 @@ export default function AdminLayout({ children }: DashboardProps) {
           <li>
             <NavLink
               to={"/admin/orders/"}
-              className="border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl"
+              className={({ isActive }) =>
+                `border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl ${
+                  isActive ? "bg-gray-600/10" : ""
+                }`
+              }
             >
               Замовлення
             </NavLink>
@@ -47,7 +59,11 @@ export default function AdminLayout({ children }: DashboardProps) {
           <li>
             <NavLink
               to={"/admin/reviews/"}
-              className="border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl"
+              className={({ isActive }) =>
+                `border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl ${
+                  isActive ? "bg-gray-600/10" : ""
+                }`
+              }
             >
               Відгуки
             </NavLink>
@@ -55,7 +71,11 @@ export default function AdminLayout({ children }: DashboardProps) {
           <li>
             <NavLink
               to={"/admin/users/"}
-              className="border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl"
+              className={({ isActive }) =>
+                `border rounded p-3 block hover:bg-gray-600/10 font-medium text-xl ${
+                  isActive ? "bg-gray-600/10" : ""
+                }`
+              }
             >
               Користувачі
             </NavLink>

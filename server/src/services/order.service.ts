@@ -4,7 +4,11 @@ import { ApiError } from "../utils/ApiError";
 import { ProductService } from "./product.service";
 import { sequelize } from "../config/database";
 import { QueryTypes } from "sequelize";
-import { CreateOrder, GetOrderArgs } from "../types/order.types";
+import {
+  CreateOrder,
+  GetOrderArgs,
+  OrderWithItems,
+} from "../types/order.types";
 import { ProductWithAssets } from "../types/product.types";
 
 export class OrderService {
@@ -40,7 +44,7 @@ export class OrderService {
         type: QueryTypes.SELECT,
         replacements: { orderId, userId, offset, limit },
       },
-    )) as Order[];
+    )) as OrderWithItems[];
 
     return orders;
   }
@@ -206,6 +210,15 @@ export class OrderService {
     const transaction = await sequelize.transaction();
     try {
       await sequelize.query(
+        'DELETE FROM "orderItems" WHERE "orderId" = :orderId',
+        {
+          replacements: { orderId },
+          type: QueryTypes.DELETE,
+          transaction,
+        },
+      );
+
+      await sequelize.query(
         'DELETE FROM orders WHERE id = :orderId AND "userId" = :userId',
         {
           replacements: { orderId, userId },
@@ -215,6 +228,60 @@ export class OrderService {
       );
 
       await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  }
+
+  static async changeStatus(orderId: number, newStatus: OrderStatus) {
+    const existOrder = (await this.getOrders({ orderId }))[0];
+    if (!existOrder) {
+      throw ApiError.NotFound("Замовлення не знайдено");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+      if (
+        newStatus === OrderStatus.Completed ||
+        newStatus === OrderStatus.Cancelled
+      ) {
+        for (const item of existOrder.orderItems) {
+          const adjustment =
+            newStatus === OrderStatus.Completed
+              ? -item.quantity
+              : item.quantity;
+
+          await sequelize.query(
+            'UPDATE products SET "stockQuantity" = "stockQuantity" + :adjustment WHERE id = :productId',
+            {
+              replacements: { adjustment, productId: item.productId },
+              type: QueryTypes.UPDATE,
+              transaction,
+            },
+          );
+        }
+      }
+
+      const [updateOrders] = await sequelize.query(
+        "UPDATE orders SET status = :status WHERE id = :orderId RETURNING *",
+        {
+          replacements: { status: newStatus, orderId },
+          type: QueryTypes.UPDATE,
+          transaction,
+        },
+      );
+
+      if (
+        !updateOrders ||
+        !Array.isArray(updateOrders) ||
+        typeof updateOrders[0] !== "object"
+      ) {
+        throw new Error("Оновлення статусу замовлення не вдалося.");
+      }
+
+      await transaction.commit();
+      return updateOrders[0];
     } catch (err) {
       await transaction.rollback();
       throw err;

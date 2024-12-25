@@ -6,6 +6,8 @@ import {
 import { API } from "../utils/api.ts";
 import { UserProfileInput } from "../pages/ProfilePage.tsx";
 import { handleFetch, HandleFetchResponse } from "../utils/handleFetch.ts";
+import { RegisterFormInput } from "../components/RegisterForm.tsx";
+import { LoginFormInput } from "../components/LoginForm.tsx";
 
 export interface FetchUsersParams extends FetchPaginationParams {}
 
@@ -47,5 +49,41 @@ export const updateUser = async (
 > => {
   return handleFetch<{ user: Omit<User, "password">; token: string }>({
     fetch: async () => await API.put(`/users/${userId}`, userData),
+  });
+};
+
+export const registerUser = (
+  userData: RegisterFormInput,
+): Promise<HandleFetchResponse<any>> => {
+  return handleFetch({
+    fetch: async () =>
+      await API.post<{
+        user: Omit<User, "password">;
+        token: string;
+      }>("/auth/register", userData, {
+        headers: { "Content-Type": "application/json" },
+      } as any),
+  });
+};
+
+export const loginUser = (
+  userData: LoginFormInput,
+): Promise<HandleFetchResponse<any>> => {
+  return handleFetch({
+    fetch: async () =>
+      await API.post<{
+        user: Omit<User, "password">;
+        token: string;
+      }>("/auth/login", userData, {
+        headers: { "Content-Type": "application/json" },
+      } as any),
+  });
+};
+
+export const deleteUser = (
+  userId: number,
+): Promise<HandleFetchResponse<any>> => {
+  return handleFetch({
+    fetch: async () => await API.delete(`/users/${userId}`),
   });
 };
