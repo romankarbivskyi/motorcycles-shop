@@ -53,9 +53,6 @@ router.post(
       isString: {
         errorMessage: "Опис повинен бути рядком",
       },
-      notEmpty: {
-        errorMessage: "Опис є обов'язковим",
-      },
     },
     stockQuantity: {
       isInt: {

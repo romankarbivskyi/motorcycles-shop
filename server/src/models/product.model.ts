@@ -26,7 +26,7 @@ export const Product = sequelize.define(
       type: DataTypes.DECIMAL,
       allowNull: false,
     },
-    description: DataTypes.STRING,
+    description: DataTypes.TEXT,
     stockQuantity: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

@@ -46,6 +46,8 @@ export const createProduct = async (
 ): Promise<HandleFetchResponse<ProductWithAssets>> => {
   const formData = new FormData();
 
+  console.log(productData);
+
   formData.append("make", productData.make);
   formData.append("model", productData.model);
   formData.append("year", productData.year.toString());

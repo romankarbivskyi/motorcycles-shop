@@ -1,19 +1,28 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Order, OrderItem } from "../global/types.ts";
+import { Order, OrderItem, ProductWithAssets } from "../global/types.ts";
 import { SubmitHandler, useFieldArray, useForm } from "react-hook-form";
 import { useAuth } from "../hooks/useAuth.ts";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import Modal from "../components/Modal.tsx";
 import { createOrder } from "../api/orders.ts";
+import { fetchProductByID } from "../api/products.ts";
 
 export interface OrderInput extends Omit<Order, "id" | "status"> {
   orderItems: Pick<OrderItem, "productId" | "quantity">[];
 }
 
+export interface ProductDetails {
+  make: string;
+  model: string;
+  year: string;
+  stockQuantity: number;
+}
+
 export default function CartPage() {
-  const [modalTitle, setModalTitle] = useState<string>("");
-  const [isModalOpen, setModalOpen] = useState<boolean>(false);
-  const [modalContent, setModalContent] = useState<ReactNode>(null);
+  const [cartItems, setCartItems] = useState<OrderItem[]>([]);
+  const [productDetails, setProductDetails] = useState<
+    Record<string, ProductDetails>
+  >({});
 
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -24,13 +33,33 @@ export default function CartPage() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    const data = JSON.parse(localStorage.getItem("orderItems") || "[]");
+    setCartItems(data);
+    const productIds = data.map((item: any) => item.productId);
+    fetchProductDetails(productIds);
+  }, []);
+
+  const fetchProductDetails = async (productIds: string[]) => {
+    const details = await Promise.all(
+      productIds.map(async (productId) => {
+        const data = await fetchProductByID(parseInt(productId));
+        return data as ProductWithAssets;
+      }),
+    );
+
+    const detailsMap: Record<string, ProductDetails> = {};
+    details.forEach((detail) => {
+      detailsMap[detail.id] = detail as ProductDetails;
+    });
+    setProductDetails(detailsMap);
+  };
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-    control,
     setValue,
-    watch,
   } = useForm<OrderInput>({
     defaultValues: {
       firstName: user?.firstName || "",
@@ -45,54 +74,30 @@ export default function CartPage() {
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("orderItems") || "[]");
-    setValue("orderItems" as any, data);
+    const filteredData = data.map((item: any) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }));
+    setValue("orderItems" as any, filteredData);
   }, []);
 
-  const { remove } = useFieldArray({
-    control,
-    name: "orderItems" as any,
-  });
-
   const onSubmit: SubmitHandler<OrderInput> = async (data) => {
-    console.log(data);
-    if (!data.orderItems.length) {
-      setModalTitle("Помилка");
-      setModalContent("Замовлення повинно містити товар");
-      setModalOpen(true);
-    }
+    if (!data.orderItems.length) alert("Замовлення повинно містити товар");
 
-    try {
-      const order = await createOrder(data);
-      console.log(order);
+    const { error } = await createOrder(data);
+    console.log(error);
+    if (error) alert(error);
+    else {
       navigate("/orders");
       localStorage.removeItem("orderItems");
-    } catch (err: any) {
-      console.error("Error creating order", err);
-
-      setModalTitle("Помилка");
-      setModalOpen(true);
-
-      setModalContent(
-        <div>
-          <p className="text-red-500">
-            {err?.message || "Неочікувана помилка."}
-          </p>
-        </div>,
-      );
     }
   };
 
   const removeFromCart = (index: number) => {
-    const cart = JSON.parse(localStorage.getItem("orderItems") || "[]");
-
+    const cart = [...cartItems];
     cart.splice(index, 1);
-    remove(index);
-
+    setCartItems(cart);
     localStorage.setItem("orderItems", JSON.stringify(cart));
-  };
-
-  const onModalClose = () => {
-    setModalOpen(false);
   };
 
   return (
@@ -147,10 +152,6 @@ export default function CartPage() {
             className={`border rounded p-2 w-full ${errors.phone ? "border-red-500" : ""}`}
             {...register("phone" as any, {
               required: "Телефон обов'язковий",
-              pattern: {
-                value: /^[0-9]{10}$/,
-                message: "Телефон має бути 10 цифр",
-              },
             })}
           />
           {errors.phone && (
@@ -159,18 +160,14 @@ export default function CartPage() {
         </div>
         <div className="w-full flex flex-col items-start">
           <label htmlFor="email" className="text-xl">
-            E-mail:
+            Email:
           </label>
           <input
             type="email"
             id="email"
             className={`border rounded p-2 w-full ${errors.email ? "border-red-500" : ""}`}
             {...register("email" as any, {
-              required: "E-mail обов'язковий",
-              pattern: {
-                value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                message: "Невірний формат e-mail",
-              },
+              required: "Email обов'язковий",
             })}
           />
           {errors.email && (
@@ -196,71 +193,65 @@ export default function CartPage() {
           )}
         </div>
         <div className="border rounded p-2">
-          <h3 className="text-xl mb-2">Продукти</h3>
-          {watch("orderItems" as any).map((item: any, index) => {
+          <h2 className="text-xl mb-3">Товари в кошику:</h2>
+          {cartItems.map((item, index) => {
+            const product = productDetails[item.productId];
             return (
-              <div key={item.productId} className="w-full flex items-end gap-4">
-                <div className="w-full">
+              <div
+                key={index}
+                className="flex justify-between items-center border rounded p-2"
+              >
+                <div>
+                  <NavLink
+                    to={`/products/${item.productId}`}
+                    className="underline font-medium"
+                  >
+                    <p className="text-lg">
+                      {product
+                        ? `${product.make} ${product.model} (${product.year})`
+                        : "Loading..."}
+                    </p>
+                  </NavLink>
                   <label htmlFor={`quantity-${index}`} className="text-xl">
-                    Кількість:
+                    Кількість:{" "}
                   </label>
                   <input
                     type="number"
                     id={`quantity-${index}`}
-                    className={`border rounded p-2 w-full ${errors.orderItems?.[index]?.quantity ? "border-red-500" : ""}`}
-                    {...register(`orderItems.${index}.quantity` as any, {
-                      required: "Поле обов'язкове",
-                    })}
+                    className="border p-2 rounded"
+                    value={item.quantity}
+                    max={product?.stockQuantity || 0}
+                    onChange={(e) => {
+                      const newQuantity = Number(e.target.value);
+                      const updatedCartItems = [...cartItems];
+                      updatedCartItems[index].quantity = newQuantity;
+                      setCartItems(updatedCartItems);
+                      localStorage.setItem(
+                        "orderItems",
+                        JSON.stringify(updatedCartItems),
+                      );
+                      setValue(
+                        `orderItems.${index}.quantity` as any,
+                        newQuantity as any,
+                      );
+                    }}
                   />
-                  {errors.orderItems?.[index]?.quantity && (
-                    <span className="text-red-500 text-sm">
-                      {errors.orderItems[index].quantity.message}
-                    </span>
-                  )}
-                </div>
-                <div className="w-full">
-                  <label htmlFor={`productId-${index}`} className="text-xl">
-                    ID товару:
-                  </label>
-                  <input
-                    type="text"
-                    id={`productId-${index}`}
-                    className={`border rounded p-2 w-full ${errors.orderItems?.[index]?.productId ? "border-red-500" : ""}`}
-                    {...register(`orderItems.${index}.productId` as any, {
-                      required: "Поле обов'язкове",
-                    })}
-                  />
-                  {errors.orderItems?.[index]?.productId && (
-                    <span className="text-red-500 text-sm">
-                      {errors.orderItems[index].productId.message}
-                    </span>
-                  )}
                 </div>
                 <button
-                  className="bg-black text-white p-3 rounded hover:opacity-75"
-                  onClick={() => {
-                    removeFromCart(index);
-                  }}
+                  type="button"
+                  onClick={() => removeFromCart(index)}
+                  className="text-red-500"
                 >
-                  X
+                  Видалити
                 </button>
               </div>
             );
           })}
         </div>
-
-        <button
-          type="submit"
-          className="bg-black text-white rounded hover:opacity-75 p-3"
-        >
-          Створити замовлення
+        <button type="submit" className=" p-2 bg-black text-white rounded">
+          Оформити замовлення
         </button>
       </form>
-      {isModalOpen && (
-        <Modal title={modalTitle} onClose={() => onModalClose()}>
-          {modalContent}
-        </Modal>
-      )}
     </div>
   );
 }

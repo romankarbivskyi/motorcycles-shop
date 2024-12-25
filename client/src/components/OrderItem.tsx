@@ -15,6 +15,7 @@ export default function OrderItem({ data }: OrderItemProps) {
     orderItems,
     status,
     totalPrice,
+    createAt,
   } = data;
 
   return (
@@ -44,6 +45,12 @@ export default function OrderItem({ data }: OrderItemProps) {
         <li>
           Повна ціна:{" "}
           <span className="underline font-medium">${totalPrice}</span>
+        </li>
+        <li>
+          Дата створення:{" "}
+          <span className="underline font-medium">
+            {new Date(createAt).toLocaleString()}
+          </span>
         </li>
       </ul>
 

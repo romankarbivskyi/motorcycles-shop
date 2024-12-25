@@ -7,7 +7,7 @@ interface ProductListProps {
 
 export default function ProductList({ data }: ProductListProps) {
   return (
-    <div className="grid grid-cols-5 gap-5 w-full my-5">
+    <div className="grid grid-cols-5 grid-rows-2 gap-5 w-full my-5">
       {data?.map((data, i) => <ProductCard data={data} key={i} />)}
     </div>
   );

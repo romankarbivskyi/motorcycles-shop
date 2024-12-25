@@ -16,23 +16,25 @@ export function ProductCard({
   const imageUrl =
     images?.length > 0
       ? `http://localhost:5000/static/${images[0].url}`
-      : "https://www.digitalocean.com/api/static-content/v1/images?src=%2F_next%2Fstatic%2Fmedia%2Fdefault-avatar.14b0d31d.jpeg";
+      : "/images.jpg";
 
   return (
     <NavLink
       key={key}
       to={`/products/${id}`}
-      className="border p-4 rounded grid grid-rows-[auto,1fr,auto] gap-4 hover:bg-gray-600/10"
+      className="border p-4 rounded grid grid-rows-subgrid row-span-2 gap-4 hover:bg-gray-600/10"
     >
-      <img
-        src={imageUrl}
-        alt={`Image of ${make} ${model} (${year})`}
-        className="rounded object-cover"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = "https://via.placeholder.com/64";
-        }}
-      />
+      <div className="flex justify-center items-center">
+        <img
+          src={imageUrl}
+          alt={`Image of ${make} ${model} (${year})`}
+          className="rounded object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = "https://via.placeholder.com/64";
+          }}
+        />
+      </div>
       <div className="mt-2">
         <h3 className="text-lg font-medium">{`${make} ${model} (${year})`}</h3>
         <p className="text-gray-600">Ціна: ${price}</p>

@@ -4,7 +4,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/scrollbar";
-import { A11y, Navigation, Pagination, Scrollbar } from "swiper/modules";
+import { Navigation, Scrollbar } from "swiper/modules";
 
 interface ProductGalleryProps {
   images: Image[];
@@ -25,10 +25,12 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
     >
       {images.map((image, index) => (
         <SwiperSlide>
-          <img
-            src={`http://localhost:5000/static/${image.url}`}
-            alt="Product image"
-          />
+          <div className="p-10">
+            <img
+              src={`http://localhost:5000/static/${image.url}`}
+              alt="Product image"
+            />
+          </div>
         </SwiperSlide>
       ))}
     </Swiper>

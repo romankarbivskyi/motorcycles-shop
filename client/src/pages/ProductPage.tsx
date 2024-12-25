@@ -39,7 +39,13 @@ export default function ProductPage() {
     if (existingProductIndex > -1) {
       cart[existingProductIndex].quantity = quantity;
     } else {
-      cart.push({ productId: parseInt(productId as string), quantity });
+      cart.push({
+        productId: parseInt(productId as string),
+        quantity,
+        make: data?.make,
+        model: data?.model,
+        year: data?.year,
+      });
     }
 
     localStorage.setItem("orderItems", JSON.stringify(cart));
@@ -60,15 +66,19 @@ export default function ProductPage() {
     setModalOpen(true);
   }, []);
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error</div>;
+  if (isLoading) return <div className="text-center m-10">Loading...</div>;
+  if (isError) return <div className="text-center m-10">Error</div>;
 
-  console.log(data);
+  if (!data) return <div className="text-center m-10">Товар не знайдено</div>;
 
   return (
     <div className="p-10">
       <div className="flex align-center justify-between items-start gap-10">
-        {data?.images && <ProductGallery images={data.images} />}
+        {data?.images ? (
+          <ProductGallery images={data.images} />
+        ) : (
+          <img src="/images.jpg" alt="Default image" />
+        )}
         <div className="w-full flex-1">
           <h1 className="text-2xl my-3">Oпис товару</h1>
           <table className="table-auto border-collapse border border-gray-300 w-full">

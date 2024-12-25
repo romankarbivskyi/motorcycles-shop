@@ -34,9 +34,8 @@ export default function ManageCategoriesPage() {
             if (error) {
               alert(error);
             } else {
-              alert("Категорію видалено успішно");
+              await refetch();
             }
-            await refetch();
           }}
           className="text-white bg-red-500 p-2 rounded"
         >

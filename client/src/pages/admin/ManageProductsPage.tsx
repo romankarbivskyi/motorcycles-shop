@@ -106,7 +106,6 @@ export default function ManageProductsPage() {
             if (error) {
               alert(`${error}`);
             } else {
-              alert("Товар видалено успішно");
               await productsRes.refetch();
             }
           }}

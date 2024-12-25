@@ -2,7 +2,8 @@ import { SubmitHandler, useForm, useFieldArray } from "react-hook-form";
 import { createProduct, updateProduct } from "../api/products.ts";
 import { useNavigate } from "react-router-dom";
 import { Image, ProductWithAssets } from "../global/types.ts";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCategories } from "../hooks/useCategories.ts";
 
 interface ProductFormProps {
   type: "create" | "update";
@@ -25,6 +26,10 @@ export interface ProductInput {
 
 export default function ProductForm({ type, productData }: ProductFormProps) {
   const [loadImages, setLoadImages] = useState<Image[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    number | undefined
+  >(undefined);
+
   const navigate = useNavigate();
 
   const {
@@ -42,7 +47,7 @@ export default function ProductForm({ type, productData }: ProductFormProps) {
       price: productData?.price || 0,
       description: productData?.description || "",
       stockQuantity: productData?.stockQuantity || 0,
-      categoryId: productData?.categoryId || 0,
+      categoryId: productData?.categoryId || undefined,
       images: [],
       attributes: productData?.attributes || [],
       deleteImages: [],
@@ -51,8 +56,12 @@ export default function ProductForm({ type, productData }: ProductFormProps) {
   });
 
   useEffect(() => {
-    if (productData?.images) setLoadImages(productData.images);
-  }, []);
+    if (productData?.images) {
+      setLoadImages(productData.images);
+      setSelectedCategoryId(productData.categoryId);
+      setValue("categoryId" as any, productData.categoryId as any);
+    }
+  }, [productData, setValue]);
 
   const attributesFieldArray = useFieldArray({
     control,
@@ -62,43 +71,67 @@ export default function ProductForm({ type, productData }: ProductFormProps) {
   const images = watch("images" as any);
 
   const onSubmit: SubmitHandler<ProductInput> = async (data) => {
-    try {
-      if (type === "create") {
-        const res = await createProduct(data);
-        if (!res.error) {
-          console.log(res);
-          alert(`Товар створено`);
-          navigate("/admin/products/");
-        } else {
-          alert(res.error);
-        }
+    console.log(selectedCategoryId);
+    setValue(
+      "categoryId" as any,
+      selectedCategoryId || (data.categoryId as any),
+    );
+
+    if (type === "create") {
+      const { error } = await createProduct(data);
+      if (error) {
+        alert(error);
         return;
       }
-
-      const initialAttributes = productData?.attributes || [];
-      const newAttributes = data.attributes || [];
-
-      const deleteAttributes: string[] = [];
-
-      initialAttributes.forEach((attr) => {
-        const existsInNew = newAttributes.some(
-          (newAttr) => newAttr.name === attr.name,
-        );
-        if (!existsInNew) {
-          deleteAttributes.push(attr.name);
-        }
-      });
-
-      data.deleteAttributes = deleteAttributes;
-
-      const updatedProduct = await updateProduct(data, productData?.id!);
-      alert(`Дані збережено`);
-      console.log(updatedProduct);
       navigate("/admin/products/");
-    } catch (err: any) {
-      alert(`Помилка: ${err.message}`);
+      return;
     }
+
+    const initialAttributes = productData?.attributes || [];
+    const newAttributes = data.attributes || [];
+
+    const deleteAttributes: string[] = [];
+
+    initialAttributes.forEach((attr) => {
+      const existsInNew = newAttributes.some(
+        (newAttr) => newAttr.name === attr.name,
+      );
+      if (!existsInNew) {
+        deleteAttributes.push(attr.name);
+      }
+    });
+
+    data.deleteAttributes = deleteAttributes;
+
+    const { error } = await updateProduct(data, productData?.id!);
+    if (error) {
+      alert(error);
+      return;
+    }
+    navigate("/admin/products/");
   };
+
+  const categoriesRes = useCategories({});
+  const categoriesData = categoriesRes.data;
+
+  const categoryOptions = useMemo(
+    () =>
+      categoriesData?.categories.map((category) => (
+        <option key={category.id} value={category.id}>
+          {category.name}
+        </option>
+      )),
+    [categoriesData],
+  );
+
+  const handleCategoryChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedId = e.target.value;
+      setSelectedCategoryId(parseInt(selectedId));
+      setValue("categoryId" as any, parseInt(selectedId) as any);
+    },
+    [setValue],
+  );
 
   return (
     <div className="p-6 bg-white rounded border">
@@ -182,7 +215,6 @@ export default function ProductForm({ type, productData }: ProductFormProps) {
           <textarea
             id="description"
             {...register("description" as any, {
-              required: "Поле обов'язкове",
               maxLength: {
                 value: 500,
                 message: "Максимальна кількість символів - 500",
@@ -284,21 +316,17 @@ export default function ProductForm({ type, productData }: ProductFormProps) {
           )}
         </div>
         <div className="flex flex-col gap-2">
-          <label htmlFor="stockQuantity" className="text-xl font-semibold">
-            ID Категорії:
+          <label htmlFor="category" className="text-xl font-semibold">
+            Категорія:
           </label>
-          <input
-            type="number"
-            id="stockQuantity"
-            {...register("categoryId" as any, {
-              required: "Поле обов'язкове",
-              min: { value: 0, message: "Кількість не може бути від'ємною" },
-            })}
-            className="border rounded p-2"
-          />
-          {errors.stockQuantity && (
-            <span className="text-red-500">{errors.stockQuantity.message}</span>
-          )}
+          <select
+            id="category"
+            onChange={handleCategoryChange}
+            value={selectedCategoryId || ""}
+            className="border border-gray-300 rounded px-3 py-2 w-full"
+          >
+            {categoryOptions}
+          </select>
         </div>
         <div className="flex flex-col gap-3">
           <label className="text-xl font-semibold">Атрибути:</label>
