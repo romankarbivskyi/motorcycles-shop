@@ -168,7 +168,7 @@ export default function ProductPage() {
                 className="bg-black text-white rounded hover:opacity-75 p-2"
                 onClick={addToCart}
               >
-                В кошик
+                Купити
               </button>
             </div>
           </div>

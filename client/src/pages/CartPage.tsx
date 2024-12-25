@@ -28,12 +28,6 @@ export default function CartPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/auth/login");
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
     const data = JSON.parse(localStorage.getItem("orderItems") || "[]");
     setCartItems(data);
     const productIds = data.map((item: any) => item.productId);
@@ -82,6 +76,11 @@ export default function CartPage() {
   }, []);
 
   const onSubmit: SubmitHandler<OrderInput> = async (data) => {
+    if (!isAuthenticated) {
+      navigate("/auth/login");
+      return;
+    }
+
     if (!data.orderItems.length) alert("Замовлення повинно містити товар");
 
     const { error } = await createOrder(data);
@@ -102,96 +101,104 @@ export default function CartPage() {
 
   return (
     <div className="p-10 w-[500px] mx-auto">
-      <h1 className="text-2xl font-medium mb-3 text-center">Нове замовлення</h1>
+      <h1 className="text-2xl font-medium mb-3 text-center">Корзина</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <div className="flex justify-between gap-5">
-          <div className="w-full flex flex-col items-start">
-            <label htmlFor="firstName" className="text-xl">
-              Ім'я:
-            </label>
-            <input
-              type="text"
-              id="firstName"
-              className={`border rounded p-2 w-full ${errors.firstName ? "border-red-500" : ""}`}
-              {...register("firstName" as any, {
-                required: "Ім'я обов'язкове",
-              })}
-            />
-            {errors.firstName && (
-              <span className="text-red-500 text-sm">
-                {errors.firstName.message}
-              </span>
-            )}
+        {isAuthenticated && (
+          <div className="flex flex-col gap-5">
+            <div className="flex justify-between gap-5">
+              <div className="w-full flex flex-col items-start">
+                <label htmlFor="firstName" className="text-xl">
+                  Ім'я:
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  className={`border rounded p-2 w-full ${errors.firstName ? "border-red-500" : ""}`}
+                  {...register("firstName" as any, {
+                    required: "Ім'я обов'язкове",
+                  })}
+                />
+                {errors.firstName && (
+                  <span className="text-red-500 text-sm">
+                    {errors.firstName.message}
+                  </span>
+                )}
+              </div>
+              <div className="w-full flex flex-col items-start">
+                <label htmlFor="lastName" className="text-xl">
+                  Прізвище:
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  className={`border rounded p-2 w-full ${errors.lastName ? "border-red-500" : ""}`}
+                  {...register("lastName" as any, {
+                    required: "Прізвище обов'язкове",
+                  })}
+                />
+                {errors.lastName && (
+                  <span className="text-red-500 text-sm">
+                    {errors.lastName.message}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="w-full flex flex-col items-start">
+              <label htmlFor="phone" className="text-xl">
+                Телефон:
+              </label>
+              <input
+                type="text"
+                id="phone"
+                className={`border rounded p-2 w-full ${errors.phone ? "border-red-500" : ""}`}
+                {...register("phone" as any, {
+                  required: "Телефон обов'язковий",
+                })}
+              />
+              {errors.phone && (
+                <span className="text-red-500 text-sm">
+                  {errors.phone.message}
+                </span>
+              )}
+            </div>
+            <div className="w-full flex flex-col items-start">
+              <label htmlFor="email" className="text-xl">
+                Email:
+              </label>
+              <input
+                type="email"
+                id="email"
+                className={`border rounded p-2 w-full ${errors.email ? "border-red-500" : ""}`}
+                {...register("email" as any, {
+                  required: "Email обов'язковий",
+                })}
+              />
+              {errors.email && (
+                <span className="text-red-500 text-sm">
+                  {errors.email.message}
+                </span>
+              )}
+            </div>
+            <div className="w-full flex flex-col items-start">
+              <label htmlFor="shipAddress" className="text-xl">
+                Адреса доставки:
+              </label>
+              <input
+                type="text"
+                id="shipAddress"
+                className={`border rounded p-2 w-full ${errors.shipAddress ? "border-red-500" : ""}`}
+                {...register("shipAddress" as any, {
+                  required: "Поле обов'язкове",
+                })}
+              />
+              {errors.shipAddress && (
+                <span className="text-red-500 text-sm">
+                  {errors.shipAddress.message}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="w-full flex flex-col items-start">
-            <label htmlFor="lastName" className="text-xl">
-              Прізвище:
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              className={`border rounded p-2 w-full ${errors.lastName ? "border-red-500" : ""}`}
-              {...register("lastName" as any, {
-                required: "Прізвище обов'язкове",
-              })}
-            />
-            {errors.lastName && (
-              <span className="text-red-500 text-sm">
-                {errors.lastName.message}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="w-full flex flex-col items-start">
-          <label htmlFor="phone" className="text-xl">
-            Телефон:
-          </label>
-          <input
-            type="text"
-            id="phone"
-            className={`border rounded p-2 w-full ${errors.phone ? "border-red-500" : ""}`}
-            {...register("phone" as any, {
-              required: "Телефон обов'язковий",
-            })}
-          />
-          {errors.phone && (
-            <span className="text-red-500 text-sm">{errors.phone.message}</span>
-          )}
-        </div>
-        <div className="w-full flex flex-col items-start">
-          <label htmlFor="email" className="text-xl">
-            Email:
-          </label>
-          <input
-            type="email"
-            id="email"
-            className={`border rounded p-2 w-full ${errors.email ? "border-red-500" : ""}`}
-            {...register("email" as any, {
-              required: "Email обов'язковий",
-            })}
-          />
-          {errors.email && (
-            <span className="text-red-500 text-sm">{errors.email.message}</span>
-          )}
-        </div>
-        <div className="w-full flex flex-col items-start">
-          <label htmlFor="shipAddress" className="text-xl">
-            Адреса доставки:
-          </label>
-          <input
-            type="text"
-            id="shipAddress"
-            className={`border rounded p-2 w-full ${errors.shipAddress ? "border-red-500" : ""}`}
-            {...register("shipAddress" as any, {
-              required: "Поле обов'язкове",
-            })}
-          />
-          {errors.shipAddress && (
-            <span className="text-red-500 text-sm">
-              {errors.shipAddress.message}
-            </span>
-          )}
-        </div>
+        )}
         <div className="border rounded p-2">
           <h2 className="text-xl mb-3">Товари в кошику:</h2>
           {cartItems.map((item, index) => {
