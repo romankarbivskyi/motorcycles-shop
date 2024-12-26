@@ -19,12 +19,8 @@ export default function ManageProductsPage() {
   >(undefined);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({
-    min: 0,
-    max: 1000000,
-  });
-
-  const [yearRange, setYearRange] = useState<{ min: number; max: number }>({
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000000 });
+  const [yearRange, setYearRange] = useState({
     min: 1900,
     max: new Date().getFullYear(),
   });
@@ -36,10 +32,11 @@ export default function ManageProductsPage() {
         limit: ITEMS_PER_PAGE,
         search,
         sortByPrice: sortPriceOption,
-        priceMin: priceRange?.min || 0,
-        priceMax: priceRange?.max || 1000000,
-        yearMin: yearRange?.min || 1900,
-        yearMax: yearRange?.max || new Date().getFullYear(),
+        priceMin: priceRange.min,
+        priceMax: priceRange.max,
+        yearMin: yearRange.min,
+        yearMax: yearRange.max,
+        yearRange,
       },
       categoryId: selectedCategoryId,
     }),
