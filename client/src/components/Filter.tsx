@@ -1,5 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
-import { useDebounce } from "../hooks/useDebounce.ts";
+import { ChangeEvent } from "react";
 
 interface FilterProps {
   onFilterChange: (filters: {
@@ -15,38 +14,28 @@ export default function Filter({
   priceRange,
   yearRange,
 }: FilterProps) {
-  const [tempPriceRange, setTempPriceRange] = useState(priceRange);
-  const [tempYearRange, setTempYearRange] = useState(yearRange);
-
-  const debouncedPriceRange = useDebounce({
-    value: tempPriceRange,
-    delay: 500,
-  });
-  const debouncedYearRange = useDebounce({ value: tempYearRange, delay: 500 });
-
-  useEffect(() => {
-    onFilterChange({
-      price: debouncedPriceRange,
-      year: debouncedYearRange,
-    });
-  }, [debouncedPriceRange, debouncedYearRange, onFilterChange]);
-
   const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const newValue = parseInt(value);
-    setTempPriceRange((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
+    onFilterChange({
+      price: {
+        ...priceRange,
+        [name]: newValue,
+      },
+      year: yearRange,
+    });
   };
 
   const handleYearChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const newValue = parseInt(value);
-    setTempYearRange((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
+    onFilterChange({
+      price: priceRange,
+      year: {
+        ...yearRange,
+        [name]: newValue,
+      },
+    });
   };
 
   return (
@@ -56,24 +45,24 @@ export default function Filter({
       <div className="filter-item">
         <label>Ціна</label>
         <div className="flex justify-between">
-          <span>{tempPriceRange.min}</span>
-          <span>{tempPriceRange.max}</span>
+          <span>{priceRange.min}</span>
+          <span>{priceRange.max}</span>
         </div>
         <input
           type="range"
           name="min"
           min="0"
-          max={tempPriceRange.max}
-          value={tempPriceRange.min}
+          max={priceRange.max}
+          value={priceRange.min}
           onChange={handlePriceChange}
           className="w-full"
         />
         <input
           type="range"
           name="max"
-          min={tempPriceRange.min}
+          min={priceRange.min}
           max="1000000"
-          value={tempPriceRange.max}
+          value={priceRange.max}
           onChange={handlePriceChange}
           className="w-full"
         />
@@ -82,24 +71,24 @@ export default function Filter({
       <div className="filter-item">
         <label>Рік</label>
         <div className="flex justify-between">
-          <span>{tempYearRange.min}</span>
-          <span>{tempYearRange.max}</span>
+          <span>{yearRange.min}</span>
+          <span>{yearRange.max}</span>
         </div>
         <input
           type="range"
           name="min"
           min="1900"
-          max={tempYearRange.max}
-          value={tempYearRange.min}
+          max={yearRange.max}
+          value={yearRange.min}
           onChange={handleYearChange}
           className="w-full"
         />
         <input
           type="range"
           name="max"
-          min={tempYearRange.min}
+          min={yearRange.min}
           max={new Date().getFullYear()}
-          value={tempYearRange.max}
+          value={yearRange.max}
           onChange={handleYearChange}
           className="w-full"
         />
